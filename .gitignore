@@ -1,0 +1,16 @@
+# Exclude instruction and task files
+instruksi.md
+CLAUDE.md
+tasks/
+.claude/
+
+# Exclude IDE and system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Exclude temporary files
+*.tmp
+*.temp
+*.log
