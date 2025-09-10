@@ -48,7 +48,7 @@ npm --version
 - NPM akan terinstall otomatis bersama Node.js
 
 ### 4. Database (MySQL/PostgreSQL)
-Untuk tutorial ini, kita akan menggunakan **SQLite** yang sudah built-in di Laravel untuk kemudahan.
+Untuk tutorial ini, kita akan menggunakan **MySQL** dengan XAMPP untuk pengalaman yang lebih realistis.
 
 ### 5. Text Editor/IDE
 Rekomendasi:
@@ -77,39 +77,35 @@ Proses ini akan:
 cd blog-laravel
 ```
 
-### Step 3: Konfigurasi Environment
+### Step 3: Setup Database dengan XAMPP
 
-Laravel menggunakan file `.env` untuk konfigurasi. File ini sudah dibuat otomatis, mari kita periksa:
+Sebelum konfigurasi Laravel, kita perlu menyiapkan database MySQL:
 
-```bash
-# Windows
-type .env
+1. **Install dan jalankan XAMPP**
+   - Download XAMPP dari [apachefriends.org](https://www.apachefriends.org/)
+   - Install dan jalankan Apache + MySQL
 
-# macOS/Linux
-cat .env
-```
+2. **Buat database melalui phpMyAdmin**
+   - Buka browser dan akses `http://localhost/phpmyadmin`
+   - Klik "New" untuk membuat database baru
+   - Nama database: `laravel_blog`
+   - Collation: `utf8mb4_general_ci`
+   - Klik "Create"
 
-Untuk tutorial ini, kita akan menggunakan SQLite. Edit file `.env`:
+### Step 4: Konfigurasi Environment
+
+Laravel menggunakan file `.env` untuk konfigurasi. Edit file `.env`:
 
 ```env
-DB_CONNECTION=sqlite
-# Hapus atau comment line berikut:
-# DB_HOST=127.0.0.1
-# DB_PORT=3306
-# DB_DATABASE=laravel
-# DB_USERNAME=root
-# DB_PASSWORD=
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=laravel_blog
+DB_USERNAME=root
+DB_PASSWORD=
 ```
 
-### Step 4: Membuat Database SQLite
-
-```bash
-# Windows
-type nul > database/database.sqlite
-
-# macOS/Linux
-touch database/database.sqlite
-```
+**Pastikan menghapus tanda # (uncomment) pada semua baris DB_* di atas!**
 
 ### Step 5: Generate Application Key
 
@@ -118,6 +114,8 @@ php artisan key:generate
 ```
 
 ### Step 6: Jalankan Migration Default
+
+**Pastikan XAMPP MySQL sudah berjalan sebelum menjalankan migration!**
 
 Laravel sudah menyediakan beberapa migration default. Jalankan:
 
@@ -161,8 +159,7 @@ blog-laravel/
 ├── bootstrap/           # File bootstrap dan cache
 ├── config/              # File konfigurasi
 ├── database/            # Migrations, seeds, factories
-│   ├── migrations/
-│   └── database.sqlite
+│   └── migrations/
 ├── public/              # File publik (index.php, assets)
 ├── resources/           # Views, raw assets
 │   ├── views/
@@ -240,8 +237,19 @@ Di pelajaran selanjutnya, kita akan mulai bekerja dengan routing dan membuat hal
 - Solusi: Install Composer dari getcomposer.org
 
 **Error: Database connection failed**
-- File SQLite belum dibuat atau permission error
-- Solusi: Pastikan file `database/database.sqlite` exists dan writable
+- XAMPP MySQL belum berjalan atau database belum dibuat
+- Solusi: 
+  1. Pastikan XAMPP MySQL service aktif
+  2. Database `laravel_blog` sudah dibuat di phpMyAdmin
+  3. Konfigurasi `.env` sudah benar (uncomment semua baris DB_*)
+
+**Error: "SQLSTATE[HY000] [1049] Unknown database"**
+- Database belum dibuat di phpMyAdmin
+- Solusi: Buat database `laravel_blog` melalui phpMyAdmin
+
+**Error: Migration gagal**
+- Periksa koneksi database dan pastikan semua service XAMPP berjalan
+- Pastikan tidak ada typo di konfigurasi `.env`
 
 ---
 

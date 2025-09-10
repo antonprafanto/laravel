@@ -20,86 +20,82 @@ Tailwind CSS adalah utility-first CSS framework yang memungkinkan kita membangun
 - 🎨 Konsistensi design system
 - 📱 Responsive design yang mudah
 
-## 🛠️ Instalasi Tailwind CSS
+## 🛠️ Instalasi Tailwind CSS v4
 
-### Step 1: Install Tailwind via NPM
+### Step 1: Install Tailwind v4 via NPM
+
+**PENTING:** Tailwind CSS v4 memiliki cara instalasi yang berbeda dari versi sebelumnya!
 
 Jalankan command berikut di root project:
 
 ```bash
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
+npm install tailwindcss@next @tailwindcss/vite@next
 ```
 
-Ini akan membuat:
-- `tailwind.config.js`: Konfigurasi Tailwind
-- `postcss.config.js`: Konfigurasi PostCSS
+**Catatan:** Di Tailwind CSS v4, tidak ada perintah `npx tailwindcss init` lagi!
 
-### Step 2: Konfigurasi Tailwind
+### Step 2: Setup CSS dengan Tailwind v4
 
-Edit file `tailwind.config.js`:
+**Di Tailwind CSS v4, konfigurasi dilakukan langsung di file CSS!**
 
-```javascript
-/** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    "./resources/**/*.blade.php",
-    "./resources/**/*.js",
-    "./resources/**/*.vue",
-  ],
-  theme: {
-    extend: {
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      },
-      colors: {
-        primary: {
-          50: '#eff6ff',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-        }
-      }
-    },
-  },
-  plugins: [],
-}
-```
-
-### Step 3: Setup CSS Input File
-
-Buat atau edit file `resources/css/app.css`:
+Edit file `resources/css/app.css`:
 
 ```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/* Konfigurasi dilakukan dengan @source directive */
+@source "./resources/**/*.blade.php";
+@source "./resources/**/*.js";
+
+/* Custom theme bisa dikonfigurasi di sini */
+@theme {
+  --font-family-sans: Inter, system-ui, sans-serif;
+  
+  --color-primary-50: #eff6ff;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+}
 
 /* Custom CSS dapat ditambahkan di sini */
 @layer base {
   body {
-    @apply font-sans antialiased;
+    font-family: theme(--font-family-sans);
+    -webkit-font-smoothing: antialiased;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium px-4 py-2 rounded-lg transition-colors;
+    background-color: theme(--color-primary-600);
+    color: white;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+  }
+  
+  .btn-primary:hover {
+    background-color: theme(--color-primary-700);
   }
   
   .card {
-    @apply bg-white rounded-lg shadow-md overflow-hidden;
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+    overflow: hidden;
   }
 }
 ```
 
-### Step 4: Update Vite Configuration
+### Step 3: Update Vite Configuration untuk Tailwind v4
 
-Laravel menggunakan Vite untuk asset building. Pastikan `vite.config.js` sudah correct:
+Laravel menggunakan Vite untuk asset building. Update `vite.config.js`:
 
 ```javascript
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
     plugins: [
@@ -107,13 +103,16 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
         }),
+        tailwindcss(),  // Tambahkan plugin Tailwind v4
     ],
 });
 ```
 
-### Step 5: Build Assets
+**PENTING:** Pastikan plugin `tailwindcss()` ditambahkan di array plugins!
 
-Jalankan Vite untuk development:
+### Step 4: Build Assets dengan Tailwind v4
+
+**Untuk Tailwind CSS v4, cukup jalankan:**
 
 ```bash
 npm run dev
@@ -123,6 +122,8 @@ Untuk production build:
 ```bash
 npm run build
 ```
+
+**Catatan:** Tidak perlu menjalankan perintah `tailwindcss init` atau konfigurasi terpisah. Semua sudah otomatis!
 
 ## 🎨 Redesign Blog dengan Tailwind
 
@@ -561,13 +562,41 @@ hover:text-primary-600     /* Hover state */
 transition-colors          /* Smooth transitions */
 ```
 
-## ✅ Tips Tailwind CSS
+## ✅ Tips Tailwind CSS v4
 
 1. **Gunakan Tailwind IntelliSense** extension di VS Code
-2. **Manfaatkan @apply** untuk component classes
-3. **Purge unused CSS** di production
+2. **Konfigurasi langsung di CSS** dengan @theme dan @source directive
+3. **Gunakan theme() function** untuk custom properties
 4. **Gunakan responsive prefixes** (sm:, md:, lg:, xl:)
-5. **Customize theme** di tailwind.config.js sesuai brand
+5. **Auto-purging** sudah built-in di v4
+
+## 🚨 Troubleshooting Tailwind CSS v4
+
+### Error: "Cannot resolve tailwindcss"
+**Penyebab:** Package Tailwind v4 belum terinstall dengan benar
+**Solusi:**
+```bash
+npm install tailwindcss@next @tailwindcss/vite@next
+```
+
+### Error: "npx tailwindcss init command not found"
+**Penyebab:** Mencoba menggunakan perintah dari Tailwind v3
+**Solusi:** Di Tailwind v4, **tidak ada perintah init**. Konfigurasi langsung di file CSS.
+
+### Error: Styles tidak muncul
+**Penyebab:** Plugin Vite belum dikonfigurasi atau @source directive salah
+**Solusi:**
+1. Pastikan `@tailwindcss/vite` plugin ada di `vite.config.js`
+2. Periksa @source directive mengarah ke file yang benar
+3. Restart dev server: `npm run dev`
+
+### Error: "Cannot find tailwind.config.js"
+**Penyebab:** Mencari file konfigurasi yang tidak diperlukan di v4
+**Solusi:** Di Tailwind v4, **tidak perlu file tailwind.config.js**. Semua konfigurasi di CSS.
+
+### Error: Theme/colors tidak terapply
+**Penyebab:** Sintaks @theme salah atau variabel CSS tidak benar
+**Solusi:** Pastikan menggunakan format `--color-primary-500` bukan `colors.primary.500`
 
 ## 🎯 Kesimpulan
 

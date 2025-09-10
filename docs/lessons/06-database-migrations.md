@@ -308,8 +308,8 @@ Migrated:  2025_09_09_000004_create_post_tag_table (34.12ms)
 ### Step 6: Periksa Tabel yang Dibuat
 
 ```bash
-# Menggunakan SQLite browser atau command line
-sqlite3 database/database.sqlite
+# Menggunakan phpMyAdmin
+# Buka http://localhost/phpmyadmin dan pilih database laravel_blog
 
 # Atau menggunakan Laravel tinker
 php artisan tinker
@@ -318,10 +318,13 @@ php artisan tinker
 Dalam tinker, coba:
 ```php
 // Periksa semua tabel
-DB::select("SELECT name FROM sqlite_master WHERE type='table'");
+DB::select("SHOW TABLES");
 
 // Periksa struktur tabel
-DB::select("PRAGMA table_info(posts)");
+DB::select("DESCRIBE posts");
+
+// Atau gunakan Schema facade
+Schema::getColumnListing('posts');
 ```
 
 ## 📊 Database Schema Overview
