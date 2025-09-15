@@ -1027,8 +1027,7 @@ class PostSeeder extends Seeder
 
     private function getLaravelContent()
     {
-        return <<<'EOD'
-# Memulai dengan Laravel 12
+        return '# Memulai dengan Laravel 12
 
 Laravel adalah framework PHP yang paling populer dan powerful untuk membangun aplikasi web modern. Dalam artikel ini, kita akan membahas langkah-langkah untuk memulai project Laravel 12 dari nol.
 
@@ -1048,85 +1047,27 @@ cd my-project
 php artisan serve
 ```
 
-Sekarang aplikasi Laravel Anda sudah berjalan di http://localhost:8000
-EOD;
+Sekarang aplikasi Laravel Anda sudah berjalan di http://localhost:8000';
     }
 
     private function getEloquentContent()
     {
-        return <<<'EOD'
-# Laravel Eloquent Tips dan Tricks
-
-Eloquent ORM adalah salah satu fitur terbaik Laravel yang membuat database interaction menjadi mudah dan elegant.
-
-## Tips Performance
-
-1. **Eager Loading** - Gunakan `with()` untuk menghindari N+1 query problem
-2. **Chunk Processing** - Gunakan `chunk()` untuk memproses data besar
-3. **Select Specific Columns** - Gunakan `select()` untuk mengurangi memory usage
-EOD;
+        return '# Laravel Eloquent Tips dan Tricks\n\nEloquent ORM adalah salah satu fitur terbaik Laravel yang membuat database interaction menjadi mudah dan elegant.\n\n## Tips Performance\n\n1. **Eager Loading** - Gunakan `with()` untuk menghindari N+1 query problem\n2. **Chunk Processing** - Gunakan `chunk()` untuk memproses data besar\n3. **Select Specific Columns** - Gunakan `select()` untuk mengurangi memory usage';
     }
 
     private function getApiContent()
     {
-        return <<<'EOD'
-# Membuat REST API dengan Laravel Sanctum
-
-Laravel Sanctum memberikan authentication system yang ringan untuk SPA dan API sederhana.
-
-## Setup Sanctum
-
-```bash
-composer require laravel/sanctum
-php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
-php artisan migrate
-```
-
-## Implementasi Authentication
-
-Sanctum memungkinkan setiap user memiliki multiple API token dengan scopes yang berbeda.
-EOD;
+        return '# Membuat REST API dengan Laravel Sanctum\n\nLaravel Sanctum memberikan authentication system yang ringan untuk SPA dan API sederhana.\n\n## Setup Sanctum\n\n```bash\ncomposer require laravel/sanctum\nphp artisan vendor:publish --provider="Laravel\\Sanctum\\SanctumServiceProvider"\nphp artisan migrate\n```\n\n## Implementasi Authentication\n\nSanctum memungkinkan setiap user memiliki multiple API token dengan scopes yang berbeda.';
     }
 
     private function getPerformanceContent()
     {
-        return <<<'EOD'
-# Optimasi Performa Laravel
-
-Performa adalah kunci kesuksesan aplikasi web modern. Berikut tips optimasi Laravel:
-
-## Database Optimization
-
-1. **Query Optimization** - Gunakan database indexes
-2. **Caching** - Implement Redis atau Memcached
-3. **Connection Pooling** - Optimize database connections
-
-## Application Level
-
-- Route Caching
-- Config Caching
-- View Caching
-- Opcache enabled
-EOD;
+        return '# Optimasi Performa Laravel\n\nPerforma adalah kunci kesuksesan aplikasi web modern. Berikut tips optimasi Laravel:\n\n## Database Optimization\n\n1. **Query Optimization** - Gunakan database indexes\n2. **Caching** - Implement Redis atau Memcached\n3. **Connection Pooling** - Optimize database connections\n\n## Application Level\n\n- Route Caching\n- Config Caching\n- View Caching\n- Opcache enabled';
     }
 
     private function getPhpContent()
     {
-        return <<<'EOD'
-# PHP 8.3 Fitur Terbaru
-
-PHP 8.3 membawa berbagai improvement yang signifikan untuk developer.
-
-## Fitur Utama
-
-1. **Typed Class Constants** - Type hints untuk class constants
-2. **Dynamic Class Constant Fetch** - Fetch constants dinamically
-3. **Override Attribute** - Explicit method overriding
-
-## Performance Improvements
-
-PHP 8.3 memberikan performance boost hingga 15% dibanding versi sebelumnya.
-EOD;
+        return '# PHP 8.3 Fitur Terbaru\n\nPHP 8.3 membawa berbagai improvement yang signifikan untuk developer.\n\n## Fitur Utama\n\n1. **Typed Class Constants** - Type hints untuk class constants\n2. **Dynamic Class Constant Fetch** - Fetch constants dinamically\n3. **Override Attribute** - Explicit method overriding\n\n## Performance Improvements\n\nPHP 8.3 memberikan performance boost hingga 15% dibanding versi sebelumnya.';
     }
 }
 ```
