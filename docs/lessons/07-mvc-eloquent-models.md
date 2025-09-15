@@ -1260,6 +1260,93 @@ return view('blog.index', compact(
 ));
 ```
 
+#### Undefined Variable $id di Blog Show View
+
+**Error yang mungkin terjadi:**
+```
+Undefined variable $id (View: resources/views/blog/show.blade.php)
+```
+
+**Penyebab:** View menggunakan dummy variable `$id` yang tidak dikirim oleh controller.
+
+**Controller mengirim:**
+```php
+// Di BlogController@show
+return view('blog.show', compact(
+    'post',           // ✅ Data post lengkap
+    'relatedPosts',   // ✅ Related posts
+    'previousPost',   // ✅ Previous post
+    'nextPost'        // ✅ Next post
+));
+// Tidak ada $id yang dikirim
+```
+
+**Solusi - Ganti semua `$id` dengan data yang sesuai:**
+
+1. **Breadcrumb Navigation:**
+```blade
+{{-- ❌ SALAH --}}
+<span>Post {{ $id }}</span>
+
+{{-- ✅ BENAR --}}
+<span>{{ $post->title }}</span>
+```
+
+2. **Post Header:**
+```blade
+{{-- ❌ SALAH --}}
+<div>Post {{ $id }}</div>
+
+{{-- ✅ BENAR --}}
+<div>{{ $post->category->name }}</div>
+```
+
+3. **Post Title & Content:**
+```blade
+{{-- ❌ SALAH --}}
+<h1>Judul Artikel Blog Post {{ $id }}</h1>
+<p>Konten untuk post ID {{ $id }}</p>
+
+{{-- ✅ BENAR --}}
+<h1>{{ $post->title }}</h1>
+<div>{!! $post->content !!}</div>
+```
+
+4. **Previous/Next Navigation:**
+```blade
+{{-- ❌ SALAH --}}
+@if($id > 1)
+    <a href="/blog/post/{{ $id - 1 }}">Post {{ $id - 1 }}</a>
+@endif
+
+{{-- ✅ BENAR --}}
+@if($previousPost)
+    <a href="{{ route('blog.show', $previousPost->slug) }}">
+        {{ $previousPost->title }}
+    </a>
+@endif
+@if($nextPost)
+    <a href="{{ route('blog.show', $nextPost->slug) }}">
+        {{ $nextPost->title }}
+    </a>
+@endif
+```
+
+5. **Related Posts:**
+```blade
+{{-- ❌ SALAH --}}
+@for($i = 1; $i <= 3; $i++)
+    <a href="/blog/post/{{ $i }}">Related Post {{ $i }}</a>
+@endfor
+
+{{-- ✅ BENAR --}}
+@foreach($relatedPosts as $relatedPost)
+    <a href="{{ route('blog.show', $relatedPost->slug) }}">
+        {{ $relatedPost->title }}
+    </a>
+@endforeach
+```
+
 ## 🎯 Kesimpulan
 
 Selamat! Anda telah berhasil:
