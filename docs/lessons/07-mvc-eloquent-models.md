@@ -1088,7 +1088,7 @@ foreach ($posts as $post) {
 }
 
 // Good - Eager loading
-$posts = Post::with("user")->get();
+$posts = Post::with(\'user\')->get();
 ```
 
 ## 2. Query Scopes
@@ -1099,7 +1099,7 @@ Buat reusable query dengan scopes:
 // Model
 public function scopePublished($query)
 {
-    return $query->where("status", "published");
+    return $query->where(\'status\', \'published\');
 }
 
 // Usage
@@ -1111,7 +1111,7 @@ $posts = Post::published()->get();
 Gunakan fillable atau guarded:
 
 ```php
-protected $fillable = ["title", "content", "status"];
+protected $fillable = [\'title\', \'content\', \'status\'];
 
 // Create
 Post::create($request->all());
@@ -1134,7 +1134,7 @@ Install dan setup Sanctum:
 
 ```bash
 composer require laravel/sanctum
-php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+php artisan vendor:publish --provider=\\\"Laravel\\\\Sanctum\\\\SanctumServiceProvider\\\"
 php artisan migrate
 ```
 
@@ -1146,19 +1146,19 @@ Setup token-based authentication:
 // Login endpoint
 public function login(Request $request)
 {
-    $credentials = $request->only("email", "password");
-    
+    $credentials = $request->only(\'email\', \'password\');
+
     if (Auth::attempt($credentials)) {
         $user = Auth::user();
-        $token = $user->createToken("API Token")->plainTextToken;
-        
+        $token = $user->createToken(\'API Token\')->plainTextToken;
+
         return response()->json([
-            "token" => $token,
-            "user" => $user
+            \'token\' => $token,
+            \'user\' => $user
         ]);
     }
-    
-    return response()->json(["message" => "Invalid credentials"], 401);
+
+    return response()->json([\'message\' => \'Invalid credentials\'], 401);
 }
 ```
 
@@ -1174,11 +1174,11 @@ class PostResource extends JsonResource
     public function toArray($request)
     {
         return [
-            "id" => $this->id,
-            "title" => $this->title,
-            "content" => $this->content,
-            "author" => $this->user->name,
-            "created_at" => $this->created_at->toDateTimeString(),
+            \'id\' => $this->id,
+            \'title\' => $this->title,
+            \'content\' => $this->content,
+            \'author\' => $this->user->name,
+            \'created_at\' => $this->created_at->toDateTimeString(),
         ];
     }
 }
@@ -1200,7 +1200,7 @@ Performa adalah aspek penting dalam aplikasi web. Berikut teknik-teknik optimasi
 ### Query Optimization
 ```php
 // Gunakan select() untuk field yang dibutuhkan saja
-$posts = Post::select("id", "title", "created_at")->get();
+$posts = Post::select(\'id\', \'title\', \'created_at\')->get();
 
 // Gunakan chunk() untuk dataset besar
 Post::chunk(100, function ($posts) {
@@ -1213,16 +1213,16 @@ Post::chunk(100, function ($posts) {
 ### Database Indexing
 ```php
 // Migration
-$table->index("email");
-$table->index(["status", "created_at"]);
+$table->index(\'email\');
+$table->index([\'status\', \'created_at\']);
 ```
 
 ## 2. Caching
 
 ### Query Caching
 ```php
-$posts = Cache::remember("posts", 3600, function () {
-    return Post::published()->with("author")->get();
+$posts = Cache::remember(\'posts\', 3600, function () {
+    return Post::published()->with(\'author\')->get();
 });
 ```
 
@@ -1243,7 +1243,7 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks: {
-                    vendor: ["lodash", "axios"],
+                    vendor: [\\\"lodash\\\", \\\"axios\\\"],
                 },
             },
         },
@@ -1256,12 +1256,12 @@ export default defineConfig({
 ### Lazy Loading
 ```php
 // Model
-protected $with = ["author"]; // Always eager load
+protected $with = [\'author\']; // Always eager load
 
 // Or conditional
 public function scopeWithAuthor($query)
 {
-    return $query->with("author");
+    return $query->with(\'author\');
 }
 ```
 
@@ -1281,8 +1281,8 @@ PHP 8.3 membawa banyak improvement dan fitur baru yang menarik untuk developer.
 ```php
 class Status
 {
-    public const string DRAFT = "draft";
-    public const string PUBLISHED = "published";
+    public const string DRAFT = \\\"draft\\\";
+    public const string PUBLISHED = \\\"published\\\";
     public const int MAX_LENGTH = 100;
 }
 ```
@@ -1290,8 +1290,8 @@ class Status
 ## 2. Dynamic Class Constant Fetch
 
 ```php
-$status = Status::{"DRAFT"}; // "draft"
-$constant = "MAX_LENGTH";
+$status = Status::{\\\"DRAFT\\\"}; // \\\"draft\\\"
+$constant = \\\"MAX_LENGTH\\\";
 $value = Status::{$constant}; // 100
 ```
 
@@ -1308,10 +1308,10 @@ $isValid = json_validate($json);
 ## 4. New Randomizer Class
 
 ```php
-$randomizer = new \Random\Randomizer();
+$randomizer = new \\\\Random\\\\Randomizer();
 
 // Generate random string
-$string = $randomizer->getBytesFromString("abcdef", 10);
+$string = $randomizer->getBytesFromString(\\\"abcdef\\\", 10);
 
 // Shuffle array
 $shuffled = $randomizer->shuffleArray([1, 2, 3, 4, 5]);
