@@ -807,56 +807,6 @@ Route::get('/contact', function () {
 })->name('contact');
 ```
 
-## ⚠️ Troubleshooting untuk Tailwind CSS v4
-
-### Masalah yang Sering Terjadi:
-
-**1. Error "Unknown at rule @apply"**
-- **Lokasi**: `navigation.blade.php` baris 80 & 83
-- **Penyebab**: CSS `@apply` di dalam `<style>` tag dalam file Blade
-- **Solusi**: Pindahkan CSS ke `resources/css/app.css`
-
-**2. Error di app.css dengan Tailwind v4**
-- **Error**: `Unknown at rule @source`, `@theme`, `@apply`
-- **Penyebab**: VS Code tidak mengenali Tailwind CSS v4 directives
-- **Solusi**:
-  1. Buat `.vscode/settings.json` dengan konfigurasi di atas
-  2. Install extension "Tailwind CSS IntelliSense"
-  3. Restart VS Code
-
-### Langkah Perbaikan Lengkap:
-
-```bash
-# 1. Pindahkan CSS dari Blade ke app.css
-# HAPUS dari navigation.blade.php:
-<style>
-.nav-link { @apply text-gray-600 hover:text-gray-900 transition-colors font-medium; }
-.nav-link.active { @apply text-primary-600; }
-</style>
-
-# TAMBAHKAN ke resources/css/app.css:
-.nav-link {
-    @apply text-gray-600 hover:text-gray-900 transition-colors font-medium;
-}
-.nav-link.active {
-    @apply text-primary-600;
-}
-```
-
-```json
-// 2. Buat .vscode/settings.json
-{
-  "css.validate": false,
-  "tailwindCSS.experimental.configFile": null,
-  "tailwindCSS.files.exclude": [],
-  "files.associations": {
-    "*.blade.php": "blade"
-  },
-  "emmet.includeLanguages": {
-    "blade": "html"
-  }
-}
-```
 
 **3. Install Extensions yang Diperlukan:**
 - Tailwind CSS IntelliSense

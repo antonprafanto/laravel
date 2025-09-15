@@ -862,60 +862,6 @@ Selamat! Database structure dan models telah berhasil dibuat:
 
 Sekarang kita memiliki fondasi database yang solid untuk aplikasi blog. Di pelajaran selanjutnya, kita akan menggunakan models ini untuk menampilkan data di controllers dan views.
 
-## 💡 Troubleshooting
-
-**Error: "Foreign key constraint fails"**
-- Pastikan urutan migration benar (parent table dulu)
-- Jalankan `php artisan migrate:fresh` untuk reset
-
-**Error: "Table already exists"**
-- Jalankan `php artisan migrate:rollback` lalu migrate lagi
-- Atau gunakan `php artisan migrate:fresh`
-
-**Error: "Column not found"**
-- Check typo dalam nama kolom
-- Pastikan migration sudah di-run
-
-### ⚠️ Error Constraint Violation di Seeder
-
-**Error: "SQLSTATE[23000]: Integrity constraint violation"**
-- **Lokasi**: `php artisan db:seed` → CategorySeeder/TagSeeder
-- **Error**: `UNIQUE constraint failed: categories.slug`
-- **Penyebab**: Seeder mencoba `create()` data yang sudah ada sebelumnya
-- **Solusi**: Gunakan `updateOrCreate()` untuk seeder yang idempotent
-
-```php
-// ❌ SALAH - Error jika data sudah ada
-foreach ($categories as $category) {
-    Category::create($category); // Error constraint violation
-}
-
-// ✅ BENAR - Idempotent seeder
-foreach ($categories as $category) {
-    Category::updateOrCreate(
-        ['slug' => $category['slug']], // Check by unique field
-        $category                      // Data to create/update
-    );
-}
-```
-
-### ⚠️ Error Model Tidak Ditemukan di Seeder
-
-**Error: "Undefined type 'App\Models\Category'"**
-- **Lokasi**: `database/seeders/CategorySeeder.php` baris 41
-- **Penyebab**: Model Category belum dibuat saat seeder dijalankan
-- **Solusi**:
-  1. Buat model terlebih dahulu: `php artisan make:model Category`
-  2. Isi model dengan fillable dan relationships yang sesuai
-  3. Baru kemudian jalankan seeder
-
-**Error: "Undefined type 'App\Models\Tag'"**
-- **Lokasi**: `database/seeders/TagSeeder.php` baris 22
-- **Penyebab**: Model Tag belum dibuat saat seeder dijalankan
-- **Solusi**:
-  1. Buat model terlebih dahulu: `php artisan make:model Tag`
-  2. Isi model dengan fillable dan relationships yang sesuai
-  3. Baru kemudian jalankan seeder
 
 ### 🔄 Urutan yang Benar untuk Migration + Models + Seeders:
 
