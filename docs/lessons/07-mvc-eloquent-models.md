@@ -1165,6 +1165,90 @@ php artisan migrate:fresh --seed
 php artisan db:seed
 ```
 
+### 🔧 Troubleshooting Common Issues
+
+#### Migration Duplikat Error
+
+**Error yang mungkin terjadi:**
+```
+SQLSTATE[HY000]: General error: 1 table "categories" already exists
+```
+
+**Penyebab:** Ada 2 migration file yang sama-sama membuat tabel yang sama.
+
+**Cara mengidentifikasi:**
+```bash
+php artisan migrate:status
+```
+
+Output yang bermasalah:
+```
+2025_09_15_025109_create_categories_table ...................... [Ran]
+2025_09_15_034154_create_categories_table ...................... [Pending]
+```
+
+**Solusi:**
+1. Identifikasi migration duplikat:
+```bash
+ls database/migrations/ | grep categories
+```
+
+2. Hapus migration yang lebih baru (timestamp lebih tinggi):
+```bash
+rm "database/migrations/2025_09_15_034154_create_categories_table.php"
+```
+
+3. Jalankan ulang migration:
+```bash
+php artisan migrate:fresh --seed
+```
+
+#### PostSeeder Syntax Error
+
+**Error yang mungkin terjadi:**
+```
+syntax error, unexpected string content "", expecting ";"
+```
+
+**Penyebab:** String multiline tidak menggunakan heredoc syntax.
+
+**Solusi:** Sudah diperbaiki dalam tutorial ini menggunakan heredoc syntax:
+```php
+private function getLaravelContent()
+{
+    return <<<'EOD'
+# Content here
+EOD;
+}
+```
+
+### 📝 Best Practices untuk Migration
+
+1. **Selalu cek status migration sebelum membuat yang baru:**
+```bash
+php artisan migrate:status
+```
+
+2. **Gunakan nama yang descriptive dan unique:**
+```bash
+# Good
+php artisan make:migration create_categories_table
+php artisan make:migration add_slug_to_categories_table
+
+# Avoid duplicate names
+```
+
+3. **Periksa existing migrations sebelum membuat:**
+```bash
+ls database/migrations/ | grep categories
+```
+
+4. **Gunakan rollback jika perlu undo migration:**
+```bash
+php artisan migrate:rollback
+php artisan migrate:rollback --step=2
+```
+
 Test aplikasi:
 
 ```bash
