@@ -104,15 +104,6 @@ Buat file `resources/views/components/layout/navigation.blade.php`:
     </div>
 </nav>
 
-<style>
-.nav-link {
-    @apply text-gray-600 hover:text-gray-900 transition-colors font-medium;
-}
-.nav-link.active {
-    @apply text-primary-600;
-}
-</style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const mobileMenuButton = document.getElementById('mobile-menu-button');
@@ -125,7 +116,52 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 ```
 
-### Step 3: Footer Component
+### Step 3: Menambahkan CSS Styles ke app.css
+
+**PENTING: Untuk Tailwind CSS v4**, CSS dengan directive `@apply` tidak boleh ditulis di dalam `<style>` tag dalam file Blade karena akan menyebabkan error. Kita harus memindahkannya ke file CSS terpisah.
+
+Tambahkan CSS untuk navigation di `resources/css/app.css`:
+
+```css
+/* CSS untuk Navigation - Tambahkan di akhir file app.css */
+.nav-link {
+    @apply text-gray-600 hover:text-gray-900 transition-colors font-medium;
+}
+
+.nav-link.active {
+    @apply text-primary-600;
+}
+```
+
+**Catatan Best Practice:**
+- ✅ CSS dengan `@apply` harus di file `.css`, bukan di Blade
+- ✅ Pisahkan styling dari markup untuk maintainability
+- ✅ Gunakan Tailwind directives di CSS files
+
+### Step 4: Konfigurasi VS Code untuk Tailwind v4
+
+Buat file `.vscode/settings.json` di root project untuk mengatasi error Tailwind v4:
+
+```json
+{
+  "css.validate": false,
+  "tailwindCSS.experimental.configFile": null,
+  "tailwindCSS.files.exclude": [],
+  "files.associations": {
+    "*.blade.php": "blade"
+  },
+  "emmet.includeLanguages": {
+    "blade": "html"
+  }
+}
+```
+
+**Langkah tambahan:**
+1. Install extension "Tailwind CSS IntelliSense" di VS Code
+2. Install extension "Laravel Blade Snippets" untuk syntax highlighting
+3. Reload VS Code setelah konfigurasi
+
+### Step 6: Footer Component
 
 Buat file `resources/views/components/layout/footer.blade.php`:
 
@@ -214,7 +250,7 @@ Buat file `resources/views/components/layout/footer.blade.php`:
 </footer>
 ```
 
-### Step 4: Sidebar Component
+### Step 7: Sidebar Component
 
 Buat file `resources/views/components/layout/sidebar.blade.php`:
 
@@ -314,7 +350,7 @@ Buat file `resources/views/components/layout/sidebar.blade.php`:
 </aside>
 ```
 
-### Step 5: Update Main Layout
+### Step 8: Update Main Layout
 
 Update `resources/views/layouts/app.blade.php`:
 
@@ -365,7 +401,7 @@ Update `resources/views/layouts/app.blade.php`:
 </html>
 ```
 
-### Step 6: Update Blog Views
+### Step 9: Update Blog Views
 
 Update `resources/views/blog/index.blade.php`:
 
@@ -764,6 +800,67 @@ Route::get('/contact', function () {
     return view('contact');
 })->name('contact');
 ```
+
+## ⚠️ Troubleshooting untuk Tailwind CSS v4
+
+### Masalah yang Sering Terjadi:
+
+**1. Error "Unknown at rule @apply"**
+- **Lokasi**: `navigation.blade.php` baris 80 & 83
+- **Penyebab**: CSS `@apply` di dalam `<style>` tag dalam file Blade
+- **Solusi**: Pindahkan CSS ke `resources/css/app.css`
+
+**2. Error di app.css dengan Tailwind v4**
+- **Error**: `Unknown at rule @source`, `@theme`, `@apply`
+- **Penyebab**: VS Code tidak mengenali Tailwind CSS v4 directives
+- **Solusi**:
+  1. Buat `.vscode/settings.json` dengan konfigurasi di atas
+  2. Install extension "Tailwind CSS IntelliSense"
+  3. Restart VS Code
+
+### Langkah Perbaikan Lengkap:
+
+```bash
+# 1. Pindahkan CSS dari Blade ke app.css
+# HAPUS dari navigation.blade.php:
+<style>
+.nav-link { @apply text-gray-600 hover:text-gray-900 transition-colors font-medium; }
+.nav-link.active { @apply text-primary-600; }
+</style>
+
+# TAMBAHKAN ke resources/css/app.css:
+.nav-link {
+    @apply text-gray-600 hover:text-gray-900 transition-colors font-medium;
+}
+.nav-link.active {
+    @apply text-primary-600;
+}
+```
+
+```json
+// 2. Buat .vscode/settings.json
+{
+  "css.validate": false,
+  "tailwindCSS.experimental.configFile": null,
+  "tailwindCSS.files.exclude": [],
+  "files.associations": {
+    "*.blade.php": "blade"
+  },
+  "emmet.includeLanguages": {
+    "blade": "html"
+  }
+}
+```
+
+**3. Install Extensions yang Diperlukan:**
+- Tailwind CSS IntelliSense
+- Laravel Blade Snippets
+
+**Best Practices untuk Tailwind v4:**
+- ✅ Gunakan CSS directives di file `.css`, bukan di Blade
+- ✅ Pisahkan styling dari markup
+- ✅ Konfigurasi VS Code untuk Tailwind v4
+- ✅ Gunakan extension untuk syntax highlighting
 
 ## 🎯 Kesimpulan
 

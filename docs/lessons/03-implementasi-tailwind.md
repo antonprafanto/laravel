@@ -598,6 +598,29 @@ npm install tailwindcss@next @tailwindcss/vite@next
 **Penyebab:** Sintaks @theme salah atau variabel CSS tidak benar
 **Solusi:** Pastikan menggunakan format `--color-primary-500` bukan `colors.primary.500`
 
+### Error: "Unknown at rule @apply/@source/@theme" di VS Code
+**Penyebab:** VS Code tidak mengenali Tailwind CSS v4 directives
+**Solusi:** Buat `.vscode/settings.json` dengan konfigurasi berikut:
+
+```json
+{
+  "css.validate": false,
+  "tailwindCSS.experimental.configFile": null,
+  "tailwindCSS.files.exclude": [],
+  "files.associations": {
+    "*.blade.php": "blade"
+  },
+  "emmet.includeLanguages": {
+    "blade": "html"
+  }
+}
+```
+
+**Langkah tambahan:**
+1. Install extension "Tailwind CSS IntelliSense" di VS Code
+2. Install extension "Laravel Blade Snippets"
+3. Restart VS Code setelah konfigurasi
+
 ## 🎯 Kesimpulan
 
 Selamat! Anda telah berhasil:

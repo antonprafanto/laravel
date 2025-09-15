@@ -655,22 +655,33 @@ Buat `resources/views/layouts/admin.blade.php`:
 
     @include('components.flash-messages')
 
-    <style>
-        .admin-nav-link {
-            @apply group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900;
-        }
-        .admin-nav-link.active {
-            @apply bg-primary-100 text-primary-700;
-        }
-        .admin-nav-section {
-            @apply px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider;
-        }
-    </style>
+    <!-- Catatan: CSS @apply untuk admin sudah dipindahkan ke resources/css/app.css -->
 
     @stack('scripts')
 </body>
 </html>
 ```
+
+### Tambahkan CSS Admin ke app.css
+
+**PENTING: Untuk Tailwind CSS v4**, tambahkan CSS berikut ke `resources/css/app.css`:
+
+```css
+/* CSS untuk Admin Navigation - Tambahkan di app.css */
+.admin-nav-link {
+    @apply group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900;
+}
+
+.admin-nav-link.active {
+    @apply bg-primary-100 text-primary-700;
+}
+
+.admin-nav-section {
+    @apply px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider;
+}
+```
+
+**Catatan**: CSS `@apply` tidak boleh ditulis di dalam `<style>` tag dalam file Blade. Selalu gunakan file CSS terpisah untuk Tailwind v4.
 
 ## 🎯 Kesimpulan Pelajaran 12
 

@@ -438,14 +438,7 @@ Edit `resources/views/layouts/app.blade.php` untuk mengintegrasikan dengan authe
     
     @stack('scripts')
 
-    <style>
-    .nav-link {
-        @apply text-gray-600 hover:text-gray-900 transition-colors font-medium;
-    }
-    .nav-link.active {
-        @apply text-primary-600;
-    }
-    </style>
+    <!-- Catatan: CSS @apply sudah dipindahkan ke resources/css/app.css -->
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
