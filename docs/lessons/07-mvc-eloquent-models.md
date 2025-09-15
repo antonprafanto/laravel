@@ -1027,104 +1027,27 @@ class PostSeeder extends Seeder
 
     private function getLaravelContent()
     {
-        return '# Memulai dengan Laravel 12
-
-Laravel adalah framework PHP yang paling populer dan powerful untuk membangun aplikasi web modern. Dalam artikel ini, kita akan membahas langkah-langkah untuk memulai project Laravel 12 dari nol.
-
-## Persiapan Environment
-
-Sebelum memulai, pastikan sistem Anda sudah terinstall:
-
-- PHP 8.2 atau lebih tinggi
-- Composer
-- Node.js dan NPM
-
-## Instalasi Laravel
-
-```bash
-composer create-project laravel/laravel my-project
-cd my-project
-php artisan serve
-```
-
-Sekarang aplikasi Laravel Anda sudah berjalan di http://localhost:8000';
+        return 'Laravel tutorial content...';
     }
 
     private function getEloquentContent()
     {
-        return <<<'EOD'
-# Laravel Eloquent Tips dan Tricks
-
-Eloquent ORM adalah salah satu fitur terbaik Laravel yang membuat database interaction menjadi mudah dan elegant.
-
-## Tips Performance
-
-1. **Eager Loading** - Gunakan `with()` untuk menghindari N+1 query problem
-2. **Chunk Processing** - Gunakan `chunk()` untuk memproses data besar
-3. **Select Specific Columns** - Gunakan `select()` untuk mengurangi memory usage
-EOD;
+        return 'Eloquent tips and tricks content...';
     }
 
     private function getApiContent()
     {
-        return <<<'EOD'
-# Membuat REST API dengan Laravel Sanctum
-
-Laravel Sanctum memberikan authentication system yang ringan untuk SPA dan API sederhana.
-
-## Setup Sanctum
-
-```bash
-composer require laravel/sanctum
-php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
-php artisan migrate
-```
-
-## Implementasi Authentication
-
-Sanctum memungkinkan setiap user memiliki multiple API token dengan scopes yang berbeda.
-EOD;
+        return 'Laravel Sanctum API content...';
     }
 
     private function getPerformanceContent()
     {
-        return <<<'EOD'
-# Optimasi Performa Laravel
-
-Performa adalah kunci kesuksesan aplikasi web modern. Berikut tips optimasi Laravel:
-
-## Database Optimization
-
-1. **Query Optimization** - Gunakan database indexes
-2. **Caching** - Implement Redis atau Memcached
-3. **Connection Pooling** - Optimize database connections
-
-## Application Level
-
-- Route Caching
-- Config Caching
-- View Caching
-- Opcache enabled
-EOD;
+        return 'Laravel performance optimization content...';
     }
 
     private function getPhpContent()
     {
-        return <<<'EOD'
-# PHP 8.3 Fitur Terbaru
-
-PHP 8.3 membawa berbagai improvement yang signifikan untuk developer.
-
-## Fitur Utama
-
-1. **Typed Class Constants** - Type hints untuk class constants
-2. **Dynamic Class Constant Fetch** - Fetch constants dinamically
-3. **Override Attribute** - Explicit method overriding
-
-## Performance Improvements
-
-PHP 8.3 memberikan performance boost hingga 15% dibanding versi sebelumnya.
-EOD;
+        return 'PHP 8.3 features content...';
     }
 }
 ```
