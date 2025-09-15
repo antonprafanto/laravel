@@ -145,8 +145,14 @@ Buat file `.vscode/settings.json` di root project untuk mengatasi error Tailwind
 ```json
 {
   "css.validate": false,
-  "tailwindCSS.experimental.configFile": null,
-  "tailwindCSS.files.exclude": [],
+  "less.validate": false,
+  "scss.validate": false,
+  "tailwindCSS.experimental.configFile": "resources/css/app.css",
+  "tailwindCSS.includeLanguages": {
+    "html": "html",
+    "php": "html",
+    "blade": "html"
+  },
   "files.associations": {
     "*.blade.php": "blade"
   },
