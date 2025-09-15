@@ -1014,9 +1014,14 @@ class PostSeeder extends Seeder
         foreach ($posts as $postData) {
             $tags = $postData['tags'];
             unset($postData['tags']);
-            
-            $post = Post::create($postData);
-            $post->tags()->attach($tags);
+
+            $post = Post::updateOrCreate(
+                ['slug' => \Illuminate\Support\Str::slug($postData['title'])],
+                $postData
+            );
+
+            // Sync tags (akan menghapus existing dan attach yang baru)
+            $post->tags()->sync($tags);
         }
     }
 

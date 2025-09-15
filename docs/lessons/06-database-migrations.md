@@ -601,6 +601,8 @@ php artisan make:seeder PostSeeder
 php artisan make:seeder TagSeeder
 ```
 
+**PENTING**: Gunakan `updateOrCreate()` untuk seeder agar idempotent (bisa dijalankan berulang kali tanpa error).
+
 Edit `database/seeders/CategorySeeder.php`:
 
 ```php
@@ -644,7 +646,10 @@ class CategorySeeder extends Seeder
         ];
 
         foreach ($categories as $category) {
-            Category::create($category);
+            Category::updateOrCreate(
+                ['slug' => $category['slug']], // Check by slug
+                $category // Data to create or update
+            );
         }
     }
 }
@@ -674,11 +679,37 @@ class TagSeeder extends Seeder
         ];
 
         foreach ($tags as $tag) {
-            Tag::create($tag);
+            Tag::updateOrCreate(
+                ['slug' => $tag['slug']], // Check by slug
+                $tag // Data to create or update
+            );
         }
     }
 }
 ```
+
+### 💡 Mengapa menggunakan updateOrCreate()?
+
+**Masalah dengan `create()`:**
+```php
+// ❌ Error jika data sudah ada
+Category::create($category); // SQLSTATE[23000]: Integrity constraint violation
+```
+
+**Solusi dengan `updateOrCreate()`:**
+```php
+// ✅ Idempotent - aman dijalankan berulang kali
+Category::updateOrCreate(
+    ['slug' => $category['slug']], // Kondisi pencarian
+    $category                      // Data untuk create/update
+);
+```
+
+**Manfaat:**
+- ✅ **Idempotent**: Seeder bisa dijalankan berulang tanpa error
+- ✅ **Tidak duplikat**: Jika slug sudah ada, data akan diupdate
+- ✅ **Insert baru**: Jika slug belum ada, data akan dibuat baru
+- ✅ **Aman untuk production**: Tidak akan merusak data existing
 
 Update `database/seeders/DatabaseSeeder.php`:
 
@@ -845,6 +876,29 @@ Sekarang kita memiliki fondasi database yang solid untuk aplikasi blog. Di pelaj
 - Check typo dalam nama kolom
 - Pastikan migration sudah di-run
 
+### ⚠️ Error Constraint Violation di Seeder
+
+**Error: "SQLSTATE[23000]: Integrity constraint violation"**
+- **Lokasi**: `php artisan db:seed` → CategorySeeder/TagSeeder
+- **Error**: `UNIQUE constraint failed: categories.slug`
+- **Penyebab**: Seeder mencoba `create()` data yang sudah ada sebelumnya
+- **Solusi**: Gunakan `updateOrCreate()` untuk seeder yang idempotent
+
+```php
+// ❌ SALAH - Error jika data sudah ada
+foreach ($categories as $category) {
+    Category::create($category); // Error constraint violation
+}
+
+// ✅ BENAR - Idempotent seeder
+foreach ($categories as $category) {
+    Category::updateOrCreate(
+        ['slug' => $category['slug']], // Check by unique field
+        $category                      // Data to create/update
+    );
+}
+```
+
 ### ⚠️ Error Model Tidak Ditemukan di Seeder
 
 **Error: "Undefined type 'App\Models\Category'"**
@@ -888,6 +942,43 @@ php artisan make:model Post
 php artisan make:seeder CategorySeeder
 php artisan make:seeder TagSeeder
 php artisan db:seed
+```
+
+### 🎯 Best Practices untuk Database Seeding
+
+**1. Gunakan updateOrCreate() untuk Idempotent Seeding**
+```php
+// ✅ RECOMMENDED
+Model::updateOrCreate(['unique_field' => $value], $data);
+
+// ❌ AVOID - Can cause constraint violations
+Model::create($data);
+```
+
+**2. Gunakan firstOrCreate() untuk User Seeding**
+```php
+$user = User::firstOrCreate([
+    'email' => 'admin@example.com'
+], [
+    'name' => 'Admin User',
+    'password' => bcrypt('password')
+]);
+```
+
+**3. Gunakan sync() untuk Many-to-Many Relationships**
+```php
+// Untuk relationships yang bisa berubah
+$post->tags()->sync($tagIds);
+
+// Untuk append tanpa menghapus existing
+$post->tags()->attach($tagIds);
+```
+
+**4. Check Existence Before Operations**
+```php
+if (!Category::where('slug', 'laravel')->exists()) {
+    // Only seed if doesn't exist
+}
 ```
 
 **Catatan**: Model harus dibuat dan dikonfigurasi sebelum seeder karena seeder menggunakan model untuk memasukkan data ke database.
