@@ -522,13 +522,13 @@ class BlogController extends Controller
                           ->first();
 
         // Get recent posts (excluding featured)
-        $recentPosts = Post::published()
-                         ->with(['category', 'author'])
-                         ->when($featuredPost, function ($query, $featuredPost) {
-                             return $query->where('id', '!=', $featuredPost->id);
-                         })
-                         ->recent(6)
-                         ->get();
+        $posts = Post::published()
+                   ->with(['category', 'author'])
+                   ->when($featuredPost, function ($query, $featuredPost) {
+                       return $query->where('id', '!=', $featuredPost->id);
+                   })
+                   ->recent(6)
+                   ->get();
 
         // Get categories with post count
         $categories = Category::active()
@@ -544,9 +544,9 @@ class BlogController extends Controller
                          ->get();
 
         return view('blog.index', compact(
-            'featuredPost', 
-            'recentPosts', 
-            'categories', 
+            'featuredPost',
+            'posts',
+            'categories',
             'popularTags'
         ));
     }
@@ -723,7 +723,7 @@ Edit `resources/views/blog/index.blade.php`:
     </section>
     @endif
 
-    @if($recentPosts->count() > 0)
+    @if($posts->count() > 0)
     <!-- Recent Posts -->
     <section>
         <div class="flex items-center justify-between mb-8">
@@ -734,7 +734,7 @@ Edit `resources/views/blog/index.blade.php`:
         </div>
 
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            @foreach($recentPosts as $post)
+            @foreach($posts as $post)
             <article class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                 <div class="aspect-video bg-gradient-to-br from-{{ $post->category->color }}-500 to-{{ $post->category->color }}-600 relative">
                     @if($post->featured_image)
@@ -1204,148 +1204,6 @@ App\Models\Post::featured()->first();
 App\Models\Category::withCount('publishedPosts')->get();
 ```
 
-### 🔧 Troubleshooting - Variable Mismatch Error
-
-#### Undefined Variable $recentPosts
-
-**Error yang mungkin terjadi:**
-```
-Undefined variable $recentPosts (View: resources/views/blog/index.blade.php)
-```
-
-**Penyebab:** Mismatch antara variable yang dikirim controller dan yang digunakan di view.
-
-**Solusi:**
-
-1. **Periksa variable yang dikirim controller:**
-```php
-// Di BlogController@index
-return view('blog.index', compact(
-    'featuredPost',
-    'recentPosts',  // ✅ Controller mengirim $recentPosts
-    'categories',
-    'popularTags'
-));
-```
-
-2. **Pastikan view menggunakan variable yang sama:**
-```blade
-{{-- Di blog/index.blade.php --}}
-@if($recentPosts->count() > 0)  {{-- ✅ Gunakan $recentPosts --}}
-    @foreach($recentPosts as $post)
-        {{-- Post content --}}
-    @endforeach
-@endif
-```
-
-**❌ Jangan gunakan:**
-```blade
-@if($posts->count() > 0)        {{-- ❌ Variable tidak ada --}}
-@foreach($posts as $post)       {{-- ❌ Variable tidak ada --}}
-```
-
-3. **Untuk consistency, bisa juga ubah controller:**
-```php
-// Alternatif: ubah variable di controller jadi $posts
-$posts = Post::published()  // Ganti $recentPosts jadi $posts
-           ->with(['category', 'author'])
-           ->recent(6)
-           ->get();
-
-return view('blog.index', compact(
-    'featuredPost',
-    'posts',        // Kirim $posts
-    'categories',
-    'popularTags'
-));
-```
-
-#### Undefined Variable $id di Blog Show View
-
-**Error yang mungkin terjadi:**
-```
-Undefined variable $id (View: resources/views/blog/show.blade.php)
-```
-
-**Penyebab:** View menggunakan dummy variable `$id` yang tidak dikirim oleh controller.
-
-**Controller mengirim:**
-```php
-// Di BlogController@show
-return view('blog.show', compact(
-    'post',           // ✅ Data post lengkap
-    'relatedPosts',   // ✅ Related posts
-    'previousPost',   // ✅ Previous post
-    'nextPost'        // ✅ Next post
-));
-// Tidak ada $id yang dikirim
-```
-
-**Solusi - Ganti semua `$id` dengan data yang sesuai:**
-
-1. **Breadcrumb Navigation:**
-```blade
-{{-- ❌ SALAH --}}
-<span>Post {{ $id }}</span>
-
-{{-- ✅ BENAR --}}
-<span>{{ $post->title }}</span>
-```
-
-2. **Post Header:**
-```blade
-{{-- ❌ SALAH --}}
-<div>Post {{ $id }}</div>
-
-{{-- ✅ BENAR --}}
-<div>{{ $post->category->name }}</div>
-```
-
-3. **Post Title & Content:**
-```blade
-{{-- ❌ SALAH --}}
-<h1>Judul Artikel Blog Post {{ $id }}</h1>
-<p>Konten untuk post ID {{ $id }}</p>
-
-{{-- ✅ BENAR --}}
-<h1>{{ $post->title }}</h1>
-<div>{!! $post->content !!}</div>
-```
-
-4. **Previous/Next Navigation:**
-```blade
-{{-- ❌ SALAH --}}
-@if($id > 1)
-    <a href="/blog/post/{{ $id - 1 }}">Post {{ $id - 1 }}</a>
-@endif
-
-{{-- ✅ BENAR --}}
-@if($previousPost)
-    <a href="{{ route('blog.show', $previousPost->slug) }}">
-        {{ $previousPost->title }}
-    </a>
-@endif
-@if($nextPost)
-    <a href="{{ route('blog.show', $nextPost->slug) }}">
-        {{ $nextPost->title }}
-    </a>
-@endif
-```
-
-5. **Related Posts:**
-```blade
-{{-- ❌ SALAH --}}
-@for($i = 1; $i <= 3; $i++)
-    <a href="/blog/post/{{ $i }}">Related Post {{ $i }}</a>
-@endfor
-
-{{-- ✅ BENAR --}}
-@foreach($relatedPosts as $relatedPost)
-    <a href="{{ route('blog.show', $relatedPost->slug) }}">
-        {{ $relatedPost->title }}
-    </a>
-@endforeach
-```
 
 ## 🎯 Kesimpulan
 
