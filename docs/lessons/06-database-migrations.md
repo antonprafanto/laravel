@@ -50,27 +50,29 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Buat tabel 'categories' di database
         Schema::create('categories', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->text('description')->nullable();
-            $table->string('color', 7)->default('#3B82F6'); // Hex color for UI
-            $table->boolean('is_active')->default(true);
-            $table->integer('sort_order')->default(0);
-            $table->timestamps();
-            
-            // Indexes for better performance
-            $table->index('slug');
-            $table->index('is_active');
+            $table->id();                                          // id (auto increment, primary key)
+            $table->string('name');                                // nama kategori (varchar 255)
+            $table->string('slug')->unique();                     // URL-friendly name (harus unik)
+            $table->text('description')->nullable();              // deskripsi panjang (boleh kosong)
+            $table->string('color', 7)->default('#3B82F6');       // warna hex (7 karakter: #ff0000)
+            $table->boolean('is_active')->default(true);          // status aktif (default: aktif)
+            $table->integer('sort_order')->default(0);            // urutan tampilan
+            $table->timestamps();                                  // created_at & updated_at otomatis
+
+            // Bikin index untuk pencarian lebih cepat
+            $table->index('slug');                                 // index untuk search by slug
+            $table->index('is_active');                           // index untuk filter aktif/tidak
         });
     }
 
     /**
-     * Reverse the migrations.
+     * Rollback migration (kalau ada error atau mau undo)
      */
     public function down(): void
     {
+        // Hapus tabel 'categories' kalau ada
         Schema::dropIfExists('categories');
     }
 };
@@ -380,32 +382,36 @@ class Category extends Model
 {
     use HasFactory;
 
-    // Kolom yang bisa diisi secara mass assignment
+    // Kolom yang boleh diisi ketika kita buat/edit kategori
+    // Laravel security: cuma kolom ini yang boleh diisi dari form
     protected $fillable = [
-        'name',        // Nama kategori
-        'slug',        // URL-friendly version dari nama
-        'description', // Deskripsi kategori
-        'color',       // Warna untuk UI (hex code)
-        'is_active',   // Status aktif/tidak aktif
-        'sort_order',  // Urutan tampilan
+        'name',        // Nama kategori (misal: "Tutorial Laravel")
+        'slug',        // URL-friendly (misal: "tutorial-laravel")
+        'description', // Penjelasan kategori
+        'color',       // Warna untuk tampilan UI (misal: "#ff0000")
+        'is_active',   // Aktif atau tidak (true/false)
+        'sort_order',  // Urutan tampil (1, 2, 3, ...)
     ];
 
-    // Automatic type casting untuk kolom database
+    // Laravel otomatis ubah tipe data dari database
     protected $casts = [
-        'is_active' => 'boolean',  // Convert 0/1 ke true/false
-        'sort_order' => 'integer', // Pastikan integer
+        'is_active' => 'boolean',  // Database simpan 0/1, tapi kita terima true/false
+        'sort_order' => 'integer', // Pastikan angka, bukan string
     ];
 
     /**
-     * Boot the model - event lifecycle
+     * Boot the model - event yang dijalankan otomatis
+     * Ini seperti "trigger" di database
      */
     protected static function boot()
     {
         parent::boot();
 
-        // Auto-generate slug dari name saat creating record baru
+        // Ketika kita buat kategori baru
         static::creating(function ($category) {
+            // Kalau slug kosong, buat otomatis dari nama
             if (empty($category->slug)) {
+                // Str::slug ubah "Tutorial Laravel" jadi "tutorial-laravel"
                 $category->slug = Str::slug($category->name);
             }
         });
@@ -647,13 +653,14 @@ class CategorySeeder extends Seeder
             ],
         ];
 
-        // Loop setiap kategori dan insert/update ke database
+        // Loop setiap kategori dan simpan ke database
         foreach ($categories as $category) {
             Category::updateOrCreate(
-                ['slug' => $category['slug']], // Cari berdasarkan slug (unique)
-                $category // Data yang akan dibuat atau diupdate
+                ['slug' => $category['slug']], // Cek: apakah kategori dengan slug ini sudah ada?
+                $category                       // Kalau belum ada -> buat baru, kalau sudah ada -> update
             );
-            // updateOrCreate = update jika ada, create jika belum ada
+            // updateOrCreate = smart method: cek dulu, baru create atau update
+            // Jadi aman dijalankan berulang kali tanpa error
         }
     }
 }

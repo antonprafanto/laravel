@@ -68,8 +68,9 @@ Rekomendasi:
 Buka terminal/command prompt dan jalankan:
 
 ```bash
-# Membuat project Laravel baru dengan nama "blog-laravel"
-# Composer akan download Laravel dan semua dependencies-nya
+# Buat project Laravel baru bernama "blog-laravel"
+# Composer = tool untuk download library PHP (seperti npm untuk Node.js)
+# Ini akan download semua file Laravel yang kita butuhkan
 composer create-project laravel/laravel blog-laravel
 ```
 
@@ -81,7 +82,8 @@ Proses ini akan:
 ### Step 2: Masuk ke Direktori Project
 
 ```bash
-# Pindah ke direktori project yang baru dibuat
+# Masuk ke folder project Laravel kita
+# cd = change directory (pindah folder)
 cd blog-laravel
 ```
 
@@ -105,13 +107,13 @@ Sebelum konfigurasi Laravel, kita perlu menyiapkan database MySQL:
 Laravel menggunakan file `.env` untuk konfigurasi. Edit file `.env`:
 
 ```env
-# Konfigurasi Database MySQL
-DB_CONNECTION=mysql          # Jenis database yang digunakan
-DB_HOST=127.0.0.1           # Alamat IP server database (localhost)
-DB_PORT=3306                # Port MySQL default
-DB_DATABASE=laravel_blog    # Nama database yang sudah dibuat di phpMyAdmin
-DB_USERNAME=root            # Username MySQL (default XAMPP)
-DB_PASSWORD=                # Password kosong untuk XAMPP default
+# Konfigurasi Database MySQL - Laravel butuh tahu cara konek ke database
+DB_CONNECTION=mysql          # Kita pakai MySQL (bukan PostgreSQL atau SQLite)
+DB_HOST=127.0.0.1           # Database ada di komputer kita sendiri (localhost)
+DB_PORT=3306                # MySQL biasanya pakai port 3306 (standar)
+DB_DATABASE=laravel_blog    # Nama database yang tadi kita buat di phpMyAdmin
+DB_USERNAME=root            # Username untuk login MySQL (XAMPP defaultnya "root")
+DB_PASSWORD=                # Password kosong karena XAMPP default tanpa password
 ```
 
 **Pastikan menghapus tanda # (uncomment) pada semua baris DB_* di atas!**
@@ -119,7 +121,8 @@ DB_PASSWORD=                # Password kosong untuk XAMPP default
 ### Step 5: Generate Application Key
 
 ```bash
-# Generate unique application key untuk enkripsi data
+# Buat kunci rahasia unik untuk aplikasi kita
+# Laravel butuh ini untuk mengamankan data (seperti password, session)
 php artisan key:generate
 ```
 
@@ -130,7 +133,8 @@ php artisan key:generate
 Laravel sudah menyediakan beberapa migration default. Jalankan:
 
 ```bash
-# Menjalankan migration untuk membuat tabel users, password_resets, dll
+# Buat tabel-tabel default Laravel di database kita
+# Laravel sudah sediakan tabel users (untuk login) dan tabel lainnya
 php artisan migrate
 ```
 
@@ -147,7 +151,8 @@ Migrated:  2014_10_12_000000_create_users_table (25.67ms)
 Sekarang mari kita test instalasi dengan menjalankan server:
 
 ```bash
-# Menjalankan development server Laravel di localhost:8000
+# Nyalakan server website Laravel kita
+# Setelah ini, website bisa dibuka di browser
 php artisan serve
 ```
 

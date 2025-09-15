@@ -515,40 +515,43 @@ class BlogController extends Controller
      */
     public function index()
     {
-        // Ambil 1 post featured untuk highlight di homepage
-        $featuredPost = Post::published()          // Hanya post yang sudah publish
-                          ->featured()             // Hanya post yang di-mark featured
-                          ->with(['category', 'author']) // Eager load relasi untuk performa
-                          ->first();               // Ambil 1 record pertama
+        // Cari 1 artikel "unggulan" untuk ditampilkan besar di atas
+        $featuredPost = Post::published()          // Cari artikel yang sudah di-publish (bukan draft)
+                          ->featured()             // Yang di-centang sebagai "featured"
+                          ->with(['category', 'author']) // Sekalian ambil data kategori & penulis (hemat query)
+                          ->first();               // Ambil yang pertama aja (cuma 1)
 
-        // Ambil post terbaru (kecuali featured post)
-        $posts = Post::published()                 // Hanya post published
-                   ->with(['category', 'author'])  // Eager load relasi
+        // Cari artikel terbaru lainnya (selain yang featured)
+        $posts = Post::published()                 // Artikel yang sudah publish
+                   ->with(['category', 'author'])  // Ambil juga data kategori & penulis
                    ->when($featuredPost, function ($query, $featuredPost) {
-                       return $query->where('id', '!=', $featuredPost->id); // Exclude featured
+                       // Kalau ada featured post, jangan tampilkan lagi di list biasa
+                       return $query->where('id', '!=', $featuredPost->id);
                    })
-                   ->recent(6)                     // Scope: order by terbaru, limit 6
-                   ->get();
+                   ->recent(6)                     // Urutkan terbaru dulu, ambil 6 artikel
+                   ->get();                        // Eksekusi query, dapet array artikel
 
-        // Ambil kategori aktif dengan jumlah post
-        $categories = Category::active()           // Scope: hanya yang is_active = true
-                            ->ordered()            // Scope: order by sort_order, name
-                            ->withCount(['publishedPosts']) // Count relasi posts
+        // Cari semua kategori yang aktif, sekalian hitung jumlah artikelnya
+        $categories = Category::active()           // Kategori yang is_active = true
+                            ->ordered()            // Urutkan sesuai sort_order
+                            ->withCount(['publishedPosts']) // Hitung berapa artikel per kategori
                             ->get();
 
-        // Ambil tag populer berdasarkan jumlah post
-        $popularTags = Tag::has('posts')           // Hanya tag yang punya minimal 1 post
-                         ->withCount(['publishedPosts']) // Count published posts
-                         ->orderBy('published_posts_count', 'desc') // Sort by count desc
-                         ->limit(10)               // Ambil 10 teratas
+        // Cari tag yang populer (banyak artikel pakai tag ini)
+        $popularTags = Tag::has('posts')           // Tag yang punya artikel (minimal 1)
+                         ->withCount(['publishedPosts']) // Hitung berapa artikel per tag
+                         ->orderBy('published_posts_count', 'desc') // Urutkan: yang paling banyak artikel di atas
+                         ->limit(10)               // Ambil 10 tag teratas aja
                          ->get();
 
+        // Kirim semua data ke view blog/index.blade.php
         return view('blog.index', compact(
-            'featuredPost',
-            'posts',
-            'categories',
-            'popularTags'
+            'featuredPost',  // Data artikel unggulan
+            'posts',         // Data artikel biasa (array)
+            'categories',    // Data semua kategori
+            'popularTags'    // Data tag populer
         ));
+        // compact() = shortcut untuk buat array: ['featuredPost' => $featuredPost, ...]
     }
 
     /**
@@ -1011,17 +1014,20 @@ class PostSeeder extends Seeder
             ],
         ];
 
+        // Loop setiap artikel dan simpan ke database
         foreach ($posts as $postData) {
-            $tags = $postData['tags'];
-            unset($postData['tags']);
+            // Pisahkan tags dari data artikel (karena tags punya tabel sendiri)
+            $tags = $postData['tags'];          // Ambil dulu data tags-nya
+            unset($postData['tags']);           // Hapus tags dari array artikel
 
+            // Buat atau update artikel
             $post = Post::updateOrCreate(
-                ['slug' => \Illuminate\Support\Str::slug($postData['title'])],
-                $postData
+                ['slug' => \Illuminate\Support\Str::slug($postData['title'])], // Buat slug dari judul
+                $postData                       // Data artikel lainnya
             );
 
-            // Sync tags (akan menghapus existing dan attach yang baru)
-            $post->tags()->sync($tags);
+            // Hubungkan artikel dengan tags (many-to-many relationship)
+            $post->tags()->sync($tags);         // sync = hapus tag lama, pasang tag baru
         }
     }
 
