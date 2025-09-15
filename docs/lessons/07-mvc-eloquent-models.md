@@ -1066,6 +1066,8 @@ Setelah instalasi berhasil, Anda bisa mulai:
 - Deploy ke production
 
 Laravel memberikan foundation yang solid untuk membangun aplikasi web yang scalable dan maintainable.
+
+Sekarang aplikasi Laravel Anda sudah berjalan di http://localhost:8000 dan siap untuk development lebih lanjut.
         ';
     }
 
