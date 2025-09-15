@@ -42,17 +42,17 @@ Edit file `routes/web.php`:
 ```php
 <?php
 
-// Import class Route dari Laravel
+// Ambil kelas Route dari Laravel
 use Illuminate\Support\Facades\Route;
 
-// Ketika user buka website.com/ (halaman utama)
+// Ketika pengguna buka website.com/ (halaman utama)
 Route::get('/', function () {
-    return view('welcome'); // Tampilkan file welcome.blade.php
+    return view('welcome'); // Tampilkan berkas welcome.blade.php
 });
 
-// Ketika user buka website.com/blog
+// Ketika pengguna buka website.com/blog
 Route::get('/blog', function () {
-    return view('blog.index'); // Tampilkan file blog/index.blade.php
+    return view('blog.index'); // Tampilkan berkas blog/index.blade.php
 });
 ```
 
@@ -62,7 +62,7 @@ Pertama, buat direktori untuk view blog:
 
 ```bash
 # Buat folder blog di dalam folder views
-# mkdir = make directory (buat folder baru)
+# mkdir = buat direktori (buat folder baru)
 mkdir resources/views/blog
 ```
 
@@ -72,8 +72,8 @@ Kemudian buat file `resources/views/blog/index.blade.php`:
 <!DOCTYPE html>
 <html lang="id"> <!-- Bahasa website kita = Indonesia -->
 <head>
-    <meta charset="UTF-8"> <!-- Encoding untuk karakter Indonesia -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Responsive di HP -->
+    <meta charset="UTF-8"> <!-- Penyandian untuk karakter Indonesia -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Menyesuaikan di HP -->
     <title>Blog Saya</title> <!-- Judul di tab browser -->
     <style>
         body {

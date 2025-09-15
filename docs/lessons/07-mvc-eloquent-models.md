@@ -61,90 +61,87 @@ class Category extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     */
+    // Kolom yang boleh diisi ketika kita buat/ubah kategori
+    // Laravel keamanan: cuma kolom ini yang boleh diisi dari formulir
     protected $fillable = [
-        'name',
-        'slug', 
-        'description',
-        'color',
-        'is_active',
-        'sort_order',
+        'name',        // Nama kategori (misal: "Tutorial Laravel")
+        'slug',        // Ramah alamat web (misal: "tutorial-laravel")
+        'description', // Penjelasan kategori
+        'color',       // Warna untuk tampilan (misal: "blue", "green")
+        'is_active',   // Apakah kategori ini aktif (benar/salah)
+        'sort_order',  // Urutan tampil (angka: 1,2,3...)
     ];
 
-    /**
-     * The attributes that should be cast.
-     */
+    // Ubah format data otomatis saat disimpan/diambil dari database
+    // Laravel akan otomatis ubah jadi format yang tepat
     protected $casts = [
-        'is_active' => 'boolean',
-        'sort_order' => 'integer',
+        'is_active' => 'boolean',  // Ubah jadi benar/salah (bukan 1/0)
+        'sort_order' => 'integer', // Ubah jadi angka bulat
     ];
 
-    /**
-     * Boot method untuk auto-generate slug
-     */
+    // Fungsi yang jalan otomatis saat kategori dibuat atau diubah
+    // Laravel panggil fungsi ini sendiri, kita nggak perlu panggil manual
     protected static function boot()
     {
-        parent::boot();
+        parent::boot(); // Panggil fungsi asli Laravel dulu
 
+        // Ketika kategori baru dibuat
         static::creating(function ($category) {
+            // Kalau slug belum diisi, buat otomatis dari nama
             if (empty($category->slug)) {
+                // Str::slug() = ubah "Tutorial Laravel" jadi "tutorial-laravel"
                 $category->slug = Str::slug($category->name);
             }
         });
 
+        // Ketika kategori diubah/diedit
         static::updating(function ($category) {
+            // Kalau nama berubah tapi slug tidak diubah manual, buat slug baru
             if ($category->isDirty('name') && !$category->isDirty('slug')) {
                 $category->slug = Str::slug($category->name);
             }
         });
     }
 
-    /**
-     * Relationship dengan Posts
-     */
+    // Hubungan: 1 kategori punya banyak artikel
+    // Kayak folder yang isinya banyak file
     public function posts(): HasMany
     {
-        return $this->hasMany(Post::class);
+        return $this->hasMany(Post::class); // Ambil semua artikel di kategori ini
     }
 
-    /**
-     * Get published posts only
-     */
+    // Ambil artikel yang sudah diterbitkan saja (bukan konsep)
+    // Fungsi khusus untuk artikel yang siap ditampilkan ke pengunjung
     public function publishedPosts(): HasMany
     {
-        return $this->posts()->where('status', 'published')
-                            ->where('published_at', '<=', now());
+        return $this->posts()->where('status', 'published')        // Status = "diterbitkan"
+                            ->where('published_at', '<=', now()); // Tanggal terbit sudah lewat
     }
 
-    /**
-     * Scope untuk active categories
-     */
+    // Pencarian khusus: cari kategori yang aktif saja
+    // Cara pakai: Category::active()->get()
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        return $query->where('is_active', true); // is_active = benar
     }
 
-    /**
-     * Scope untuk ordering
-     */
+    // Pencarian khusus: urutkan kategori sesuai urutan tampil
+    // Cara pakai: Category::ordered()->get()
     public function scopeOrdered($query)
     {
+        // Urutkan berdasarkan: 1) urutan tampil, 2) nama (A-Z)
         return $query->orderBy('sort_order')->orderBy('name');
     }
 
-    /**
-     * Get posts count attribute
-     */
+    // Hitung berapa artikel yang sudah diterbitkan di kategori ini
+    // Cara pakai: $category->posts_count (otomatis jadi angka)
     public function getPostsCountAttribute()
     {
-        return $this->publishedPosts()->count();
+        return $this->publishedPosts()->count(); // Hitung jumlah artikel
     }
 
-    /**
-     * Get route key name untuk URL
-     */
+    // Bilang Laravel: pakai 'slug' buat alamat web (bukan 'id')
+    // Jadi alamat web: /category/tutorial-laravel (bukan /category/1)
     public function getRouteKeyName()
     {
         return 'slug';
@@ -172,158 +169,150 @@ class Post extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     */
+    // Kolom yang boleh diisi ketika kita buat/ubah artikel
+    // Laravel keamanan: cuma kolom ini yang boleh diisi dari formulir
     protected $fillable = [
-        'title',
-        'slug',
-        'excerpt',
-        'content',
-        'featured_image',
-        'status',
-        'is_featured',
-        'published_at',
-        'views_count',
-        'meta_title',
-        'meta_description',
-        'user_id',
-        'category_id',
+        'title',           // Judul artikel
+        'slug',            // Alamat web ramah (dari judul)
+        'excerpt',         // Ringkasan pendek artikel
+        'content',         // Isi artikel lengkap
+        'featured_image',  // Gambar utama artikel
+        'status',          // Status: konsep/diterbitkan/arsip
+        'is_featured',     // Apakah artikel unggulan (tampil besar)
+        'published_at',    // Kapan artikel diterbitkan
+        'views_count',     // Berapa kali artikel dibaca
+        'meta_title',      // Judul untuk mesin pencari (SEO)
+        'meta_description', // Deskripsi untuk mesin pencari (SEO)
+        'user_id',         // ID penulis artikel
+        'category_id',     // ID kategori artikel
     ];
 
-    /**
-     * The attributes that should be cast.
-     */
+    // Ubah format data otomatis saat disimpan/diambil dari database
     protected $casts = [
-        'published_at' => 'datetime',
-        'is_featured' => 'boolean',
-        'views_count' => 'integer',
+        'published_at' => 'datetime', // Ubah jadi tanggal-waktu yang mudah dipakai
+        'is_featured' => 'boolean',   // Ubah jadi benar/salah (bukan 1/0)
+        'views_count' => 'integer',   // Ubah jadi angka bulat
     ];
 
-    /**
-     * Boot method untuk auto-generate slug
-     */
+    // Fungsi yang jalan otomatis saat artikel dibuat atau diubah
     protected static function boot()
     {
-        parent::boot();
+        parent::boot(); // Panggil fungsi asli Laravel dulu
 
+        // Ketika artikel baru dibuat
         static::creating(function ($post) {
+            // Kalau slug belum diisi, buat otomatis dari judul
             if (empty($post->slug)) {
+                // Ubah "Tutorial Laravel" jadi "tutorial-laravel"
                 $post->slug = Str::slug($post->title);
             }
-            
-            // Auto-generate excerpt dari content jika kosong
+
+            // Kalau ringkasan kosong, buat otomatis dari isi artikel
             if (empty($post->excerpt) && !empty($post->content)) {
+                // Ambil 160 huruf pertama, hapus tag HTML
                 $post->excerpt = Str::limit(strip_tags($post->content), 160);
             }
         });
 
+        // Ketika artikel diubah/diedit
         static::updating(function ($post) {
+            // Kalau judul berubah tapi slug tidak diubah manual, buat slug baru
             if ($post->isDirty('title') && !$post->isDirty('slug')) {
                 $post->slug = Str::slug($post->title);
             }
         });
     }
 
-    /**
-     * Relationship dengan User (Author)
-     */
+    // Hubungan: artikel ini ditulis oleh 1 pengguna
+    // Kayak surat yang punya 1 pengirim
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class); // Ambil data pengguna penulis
     }
 
-    /**
-     * Alias untuk author
-     */
+    // Nama lain untuk user() - supaya lebih jelas ini penulis artikel
+    // Cara pakai: $artikel->author->name (sama dengan $artikel->user->name)
     public function author(): BelongsTo
     {
         return $this->user();
     }
 
-    /**
-     * Relationship dengan Category
-     */
+    // Hubungan: artikel ini masuk ke 1 kategori
+    // Kayak file yang ada di 1 folder
     public function category(): BelongsTo
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(Category::class); // Ambil data kategori artikel ini
     }
 
-    /**
-     * Relationship dengan Tags (Many-to-Many)
-     */
+    // Hubungan: artikel ini punya banyak label, 1 label bisa di banyak artikel
+    // Kayak artikel bisa punya label: "Tutorial", "Pemula", "Laravel"
     public function tags(): BelongsToMany
     {
-        return $this->belongsToMany(Tag::class);
+        return $this->belongsToMany(Tag::class); // Ambil semua label artikel ini
     }
 
-    /**
-     * Scope untuk published posts
-     */
+    // Pencarian khusus: cari artikel yang sudah diterbitkan
+    // Cara pakai: Post::published()->get()
     public function scopePublished($query)
     {
-        return $query->where('status', 'published')
-                    ->where('published_at', '<=', now());
+        return $query->where('status', 'published')        // Status = "diterbitkan"
+                    ->where('published_at', '<=', now());  // Tanggal terbit sudah lewat
     }
 
-    /**
-     * Scope untuk featured posts
-     */
+    // Pencarian khusus: cari artikel unggulan
+    // Cara pakai: Post::featured()->get()
     public function scopeFeatured($query)
     {
-        return $query->where('is_featured', true);
+        return $query->where('is_featured', true); // is_featured = benar
     }
 
-    /**
-     * Scope untuk recent posts
-     */
+    // Pencarian khusus: cari artikel terbaru
+    // Cara pakai: Post::recent(10)->get() = ambil 10 artikel terbaru
     public function scopeRecent($query, $limit = 5)
     {
-        return $query->orderBy('published_at', 'desc')->limit($limit);
+        return $query->orderBy('published_at', 'desc') // Urutkan terbaru dulu
+                    ->limit($limit);                   // Batasi jumlah hasil
     }
 
-    /**
-     * Scope untuk popular posts
-     */
+    // Pencarian khusus: cari artikel populer (banyak dibaca)
+    // Cara pakai: Post::popular(5)->get() = ambil 5 artikel terpopuler
     public function scopePopular($query, $limit = 5)
     {
-        return $query->orderBy('views_count', 'desc')->limit($limit);
+        return $query->orderBy('views_count', 'desc') // Urutkan paling banyak dibaca dulu
+                    ->limit($limit);                  // Batasi jumlah hasil
     }
 
-    /**
-     * Get formatted published date
-     */
+    // Ubah tanggal terbit jadi format yang mudah dibaca
+    // Cara pakai: $artikel->published_date = "15 September 2025"
     public function getPublishedDateAttribute()
     {
+        // Format: tanggal Bulan tahun (misal: 15 September 2025)
         return $this->published_at?->format('d F Y');
     }
 
-    /**
-     * Get reading time estimate
-     */
+    // Hitung perkiraan waktu baca artikel (dalam menit)
+    // Cara pakai: $artikel->reading_time = "5 min read"
     public function getReadingTimeAttribute()
     {
-        $wordCount = str_word_count(strip_tags($this->content));
-        $readingSpeed = 200; // words per minute
-        $minutes = ceil($wordCount / $readingSpeed);
-        
-        return $minutes . ' min read';
+        $wordCount = str_word_count(strip_tags($this->content)); // Hitung kata di artikel
+        $readingSpeed = 200; // Rata-rata orang baca 200 kata per menit
+        $minutes = ceil($wordCount / $readingSpeed);             // Bagi jumlah kata dengan kecepatan baca
+
+        return $minutes . ' min read'; // Hasil: "5 min read"
     }
 
-    /**
-     * Get route key name untuk URL
-     */
+    // Bilang Laravel: pakai 'slug' buat alamat web (bukan 'id')
+    // Jadi alamat: /post/tutorial-laravel (bukan /post/1)
     public function getRouteKeyName()
     {
         return 'slug';
     }
 
-    /**
-     * Increment views count
-     */
+    // Tambah 1 ke jumlah kali artikel dibaca
+    // Dipanggil setiap kali orang buka artikel
     public function incrementViews()
     {
-        $this->increment('views_count');
+        $this->increment('views_count'); // +1 ke kolom views_count
     }
 }
 ```
@@ -346,57 +335,51 @@ class Tag extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     */
+    // Kolom yang boleh diisi ketika kita buat/ubah label
     protected $fillable = [
-        'name',
-        'slug',
-        'color',
+        'name',  // Nama label (misal: "Laravel", "Tutorial")
+        'slug',  // Alamat web ramah (misal: "laravel", "tutorial")
+        'color', // Warna label untuk tampilan (misal: "blue", "red")
     ];
 
-    /**
-     * Boot method untuk auto-generate slug
-     */
+    // Fungsi yang jalan otomatis saat label dibuat
     protected static function boot()
     {
-        parent::boot();
+        parent::boot(); // Panggil fungsi asli Laravel dulu
 
+        // Ketika label baru dibuat
         static::creating(function ($tag) {
+            // Kalau slug belum diisi, buat otomatis dari nama
             if (empty($tag->slug)) {
+                // Ubah "Laravel Framework" jadi "laravel-framework"
                 $tag->slug = Str::slug($tag->name);
             }
         });
     }
 
-    /**
-     * Relationship dengan Posts (Many-to-Many)
-     */
+    // Hubungan: label ini ada di banyak artikel, artikel bisa punya banyak label
+    // Kayak hashtag di media sosial
     public function posts(): BelongsToMany
     {
-        return $this->belongsToMany(Post::class);
+        return $this->belongsToMany(Post::class); // Ambil semua artikel dengan label ini
     }
 
-    /**
-     * Get published posts only
-     */
+    // Ambil artikel yang sudah diterbitkan saja (bukan konsep)
     public function publishedPosts(): BelongsToMany
     {
-        return $this->posts()->where('status', 'published')
-                             ->where('published_at', '<=', now());
+        return $this->posts()->where('status', 'published')        // Status = "diterbitkan"
+                             ->where('published_at', '<=', now()); // Tanggal terbit sudah lewat
     }
 
-    /**
-     * Get posts count attribute
-     */
+    // Hitung berapa artikel yang pakai label ini (yang sudah diterbitkan)
+    // Cara pakai: $label->posts_count = angka
     public function getPostsCountAttribute()
     {
-        return $this->publishedPosts()->count();
+        return $this->publishedPosts()->count(); // Hitung jumlah artikel
     }
 
-    /**
-     * Get route key name untuk URL
-     */
+    // Bilang Laravel: pakai 'slug' buat alamat web (bukan 'id')
+    // Jadi alamat: /tag/laravel (bukan /tag/1)
     public function getRouteKeyName()
     {
         return 'slug';
@@ -422,68 +405,58 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     */
+    // Kolom yang boleh diisi ketika daftar/ubah profil pengguna
     protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'avatar',
-        'bio',
-        'role',
+        'name',     // Nama lengkap pengguna
+        'email',    // Alamat email (untuk login)
+        'password', // Kata sandi (otomatis di-hash/acak Laravel)
+        'avatar',   // Foto profil pengguna
+        'bio',      // Deskripsi singkat tentang pengguna
+        'role',     // Peran: admin, penulis, pengguna biasa
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     */
+    // Data yang disembunyikan saat pengguna diubah jadi JSON/array
+    // Keamanan: jangan pernah tampilkan kata sandi ke browser
     protected $hidden = [
-        'password',
-        'remember_token',
+        'password',       // Kata sandi (rahasia!)
+        'remember_token', // Token "ingat saya" (rahasia!)
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     */
+    // Ubah format data otomatis saat disimpan/diambil dari database
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'last_active_at' => 'datetime',
+            'email_verified_at' => 'datetime', // Ubah jadi tanggal-waktu
+            'password' => 'hashed',            // Otomatis acak kata sandi (keamanan)
+            'last_active_at' => 'datetime',    // Kapan terakhir online
         ];
     }
 
-    /**
-     * Relationship dengan Posts
-     */
+    // Hubungan: 1 pengguna bisa menulis banyak artikel
+    // Kayak 1 penulis yang punya banyak buku
     public function posts(): HasMany
     {
-        return $this->hasMany(Post::class);
+        return $this->hasMany(Post::class); // Ambil semua artikel pengguna ini
     }
 
-    /**
-     * Get published posts only
-     */
+    // Ambil artikel yang sudah diterbitkan saja (bukan konsep)
     public function publishedPosts(): HasMany
     {
-        return $this->posts()->published();
+        return $this->posts()->published(); // Pakai scope published() dari model Post
     }
 
-    /**
-     * Check if user is admin
-     */
+    // Cek apakah pengguna ini admin
+    // Cara pakai: if ($user->isAdmin()) { ... }
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === 'admin'; // Bandingkan role dengan "admin"
     }
 
-    /**
-     * Check if user is author
-     */
+    // Cek apakah pengguna ini bisa menulis artikel
+    // Admin dan penulis boleh menulis, pengguna biasa tidak
     public function isAuthor(): bool
     {
-        return in_array($this->role, ['admin', 'author']);
+        return in_array($this->role, ['admin', 'author']); // Role ada dalam daftar ini
     }
 }
 ```
@@ -516,42 +489,42 @@ class BlogController extends Controller
     public function index()
     {
         // Cari 1 artikel "unggulan" untuk ditampilkan besar di atas
-        $featuredPost = Post::published()          // Cari artikel yang sudah di-publish (bukan draft)
-                          ->featured()             // Yang di-centang sebagai "featured"
-                          ->with(['category', 'author']) // Sekalian ambil data kategori & penulis (hemat query)
+        $featuredPost = Post::published()          // Cari artikel yang sudah diterbitkan (bukan konsep)
+                          ->featured()             // Yang di-centang sebagai "unggulan"
+                          ->with(['category', 'author']) // Sekalian ambil data kategori & penulis (hemat pencarian)
                           ->first();               // Ambil yang pertama aja (cuma 1)
 
-        // Cari artikel terbaru lainnya (selain yang featured)
-        $posts = Post::published()                 // Artikel yang sudah publish
+        // Cari artikel terbaru lainnya (selain yang unggulan)
+        $posts = Post::published()                 // Artikel yang sudah terbit
                    ->with(['category', 'author'])  // Ambil juga data kategori & penulis
-                   ->when($featuredPost, function ($query, $featuredPost) {
-                       // Kalau ada featured post, jangan tampilkan lagi di list biasa
-                       return $query->where('id', '!=', $featuredPost->id);
+                   ->when($featuredPost, function ($pencarian, $featuredPost) {
+                       // Kalau ada artikel unggulan, jangan tampilkan lagi di daftar biasa
+                       return $pencarian->where('id', '!=', $featuredPost->id);
                    })
                    ->recent(6)                     // Urutkan terbaru dulu, ambil 6 artikel
-                   ->get();                        // Eksekusi query, dapet array artikel
+                   ->get();                        // Jalankan pencarian, dapat daftar artikel
 
         // Cari semua kategori yang aktif, sekalian hitung jumlah artikelnya
-        $categories = Category::active()           // Kategori yang is_active = true
-                            ->ordered()            // Urutkan sesuai sort_order
+        $categories = Category::active()           // Kategori yang is_active = benar
+                            ->ordered()            // Urutkan sesuai urutan tampil
                             ->withCount(['publishedPosts']) // Hitung berapa artikel per kategori
                             ->get();
 
-        // Cari tag yang populer (banyak artikel pakai tag ini)
-        $popularTags = Tag::has('posts')           // Tag yang punya artikel (minimal 1)
-                         ->withCount(['publishedPosts']) // Hitung berapa artikel per tag
+        // Cari label yang populer (banyak artikel pakai label ini)
+        $labelPopuler = Tag::has('posts')          // Label yang punya artikel (minimal 1)
+                         ->withCount(['publishedPosts']) // Hitung berapa artikel per label
                          ->orderBy('published_posts_count', 'desc') // Urutkan: yang paling banyak artikel di atas
-                         ->limit(10)               // Ambil 10 tag teratas aja
+                         ->limit(10)               // Ambil 10 label teratas aja
                          ->get();
 
-        // Kirim semua data ke view blog/index.blade.php
+        // Kirim semua data ke tampilan blog/index.blade.php
         return view('blog.index', compact(
             'featuredPost',  // Data artikel unggulan
-            'posts',         // Data artikel biasa (array)
+            'posts',         // Data artikel biasa (daftar)
             'categories',    // Data semua kategori
-            'popularTags'    // Data tag populer
+            'labelPopuler'   // Data label populer
         ));
-        // compact() = shortcut untuk buat array: ['featuredPost' => $featuredPost, ...]
+        // compact() = jalan pintas untuk buat daftar: ['featuredPost' => $featuredPost, ...]
     }
 
     /**
@@ -562,32 +535,32 @@ class BlogController extends Controller
         // Increment views
         $post->incrementViews();
 
-        // Load relationships
+        // Muat data terkait (kategori, penulis, label)
         $post->load(['category', 'author', 'tags']);
 
-        // Get related posts
-        $relatedPosts = Post::published()
+        // Cari artikel terkait (kategori sama)
+        $artikelTerkait = Post::published()
                           ->where('id', '!=', $post->id)
                           ->where('category_id', $post->category_id)
                           ->recent(3)
                           ->get();
 
-        // Get next/previous posts
-        $previousPost = Post::published()
+        // Cari artikel sebelum/sesudah
+        $artikelSebelum = Post::published()
                           ->where('published_at', '<', $post->published_at)
                           ->orderBy('published_at', 'desc')
                           ->first();
 
-        $nextPost = Post::published()
+        $artikelSesudah = Post::published()
                       ->where('published_at', '>', $post->published_at)
                       ->orderBy('published_at', 'asc')
                       ->first();
 
         return view('blog.show', compact(
-            'post', 
-            'relatedPosts', 
-            'previousPost', 
-            'nextPost'
+            'post',
+            'artikelTerkait',
+            'artikelSebelum',
+            'artikelSesudah'
         ));
     }
 
@@ -875,13 +848,13 @@ Edit `resources/views/components/layout/sidebar.blade.php`:
         </div>
     </div>
     
-    @if(isset($popularTags) && $popularTags->count() > 0)
+    @if(isset($labelPopuler) && $labelPopuler->count() > 0)
     <!-- Popular Tags -->
     <div class="bg-white rounded-xl shadow-sm p-6">
         <h3 class="font-bold text-gray-900 mb-4">Popular Tags</h3>
         <div class="flex flex-wrap gap-2">
-            @foreach($popularTags as $tag)
-            <a href="{{ route('blog.tag', $tag) }}" 
+            @foreach($labelPopuler as $tag)
+            <a href="{{ route('blog.tag', $tag) }}"
                class="bg-gray-100 hover:bg-primary-100 text-gray-700 hover:text-primary-700 px-3 py-1 rounded-full text-sm transition-colors">
                 {{ $tag->name }}
                 <span class="text-xs opacity-75">({{ $tag->published_posts_count }})</span>
@@ -945,11 +918,11 @@ class PostSeeder extends Seeder
         $laravelCategory = Category::where('slug', 'laravel-framework')->first();
         $phpCategory = Category::where('slug', 'php-programming')->first();
 
-        // Get tags
-        $laravelTag = Tag::where('slug', 'laravel')->first();
-        $phpTag = Tag::where('slug', 'php')->first();
-        $tutorialTag = Tag::where('slug', 'tutorial')->first();
-        $beginnerTag = Tag::where('slug', 'beginner')->first();
+        // Ambil label yang sudah ada
+        $labelLaravel = Tag::where('slug', 'laravel')->first();
+        $labelPhp = Tag::where('slug', 'php')->first();
+        $labelTutorial = Tag::where('slug', 'tutorial')->first();
+        $labelPemula = Tag::where('slug', 'beginner')->first();
 
         $posts = [
             [
@@ -962,7 +935,7 @@ class PostSeeder extends Seeder
                 'user_id' => $admin->id,
                 'category_id' => $laravelCategory->id,
                 'views_count' => 156,
-                'tags' => [$laravelTag, $tutorialTag, $beginnerTag],
+                'tags' => [$labelLaravel, $labelTutorial, $labelPemula],
             ],
             [
                 'title' => 'Laravel Eloquent: Tips dan Tricks untuk Developer',
@@ -974,7 +947,7 @@ class PostSeeder extends Seeder
                 'user_id' => $admin->id,
                 'category_id' => $laravelCategory->id,
                 'views_count' => 124,
-                'tags' => [$laravelTag, $phpTag],
+                'tags' => [$labelLaravel, $labelPhp],
             ],
             [
                 'title' => 'Membuat REST API dengan Laravel Sanctum',
@@ -986,7 +959,7 @@ class PostSeeder extends Seeder
                 'user_id' => $admin->id,
                 'category_id' => $laravelCategory->id,
                 'views_count' => 89,
-                'tags' => [$laravelTag, $tutorialTag],
+                'tags' => [$labelLaravel, $labelTutorial],
             ],
             [
                 'title' => 'Optimasi Performa Aplikasi Laravel',
@@ -998,7 +971,7 @@ class PostSeeder extends Seeder
                 'user_id' => $admin->id,
                 'category_id' => $laravelCategory->id,
                 'views_count' => 203,
-                'tags' => [$laravelTag, $phpTag],
+                'tags' => [$labelLaravel, $labelPhp],
             ],
             [
                 'title' => 'PHP 8.3: Fitur Baru yang Wajib Diketahui',
@@ -1010,15 +983,15 @@ class PostSeeder extends Seeder
                 'user_id' => $admin->id,
                 'category_id' => $phpCategory->id,
                 'views_count' => 67,
-                'tags' => [$phpTag, $tutorialTag],
+                'tags' => [$labelPhp, $labelTutorial],
             ],
         ];
 
         // Loop setiap artikel dan simpan ke database
         foreach ($posts as $postData) {
-            // Pisahkan tags dari data artikel (karena tags punya tabel sendiri)
-            $tags = $postData['tags'];          // Ambil dulu data tags-nya
-            unset($postData['tags']);           // Hapus tags dari array artikel
+            // Pisahkan label dari data artikel (karena label punya tabel sendiri)
+            $labelArtikel = $postData['tags'];  // Ambil dulu data label-nya
+            unset($postData['tags']);           // Hapus label dari array artikel
 
             // Buat atau update artikel
             $post = Post::updateOrCreate(
@@ -1026,8 +999,8 @@ class PostSeeder extends Seeder
                 $postData                       // Data artikel lainnya
             );
 
-            // Hubungkan artikel dengan tags (many-to-many relationship)
-            $post->tags()->sync($tags);         // sync = hapus tag lama, pasang tag baru
+            // Hubungkan artikel dengan label (many-to-many relationship)
+            $post->tags()->sync($labelArtikel); // sync = hapus label lama, pasang label baru
         }
     }
 

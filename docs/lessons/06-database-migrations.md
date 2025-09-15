@@ -382,26 +382,26 @@ class Category extends Model
 {
     use HasFactory;
 
-    // Kolom yang boleh diisi ketika kita buat/edit kategori
-    // Laravel security: cuma kolom ini yang boleh diisi dari form
+    // Kolom yang boleh diisi ketika kita buat/ubah kategori
+    // Laravel keamanan: cuma kolom ini yang boleh diisi dari formulir
     protected $fillable = [
         'name',        // Nama kategori (misal: "Tutorial Laravel")
-        'slug',        // URL-friendly (misal: "tutorial-laravel")
+        'slug',        // Ramah alamat web (misal: "tutorial-laravel")
         'description', // Penjelasan kategori
-        'color',       // Warna untuk tampilan UI (misal: "#ff0000")
-        'is_active',   // Aktif atau tidak (true/false)
+        'color',       // Warna untuk tampilan antarmuka (misal: "#ff0000")
+        'is_active',   // Aktif atau tidak (benar/salah)
         'sort_order',  // Urutan tampil (1, 2, 3, ...)
     ];
 
-    // Laravel otomatis ubah tipe data dari database
+    // Laravel otomatis ubah jenis data dari database
     protected $casts = [
-        'is_active' => 'boolean',  // Database simpan 0/1, tapi kita terima true/false
-        'sort_order' => 'integer', // Pastikan angka, bukan string
+        'is_active' => 'boolean',  // Database simpan 0/1, tapi kita terima benar/salah
+        'sort_order' => 'integer', // Pastikan angka, bukan teks
     ];
 
     /**
-     * Boot the model - event yang dijalankan otomatis
-     * Ini seperti "trigger" di database
+     * Mulai model - kejadian yang dijalankan otomatis
+     * Ini seperti "pemicu" di database
      */
     protected static function boot()
     {
@@ -409,7 +409,7 @@ class Category extends Model
 
         // Ketika kita buat kategori baru
         static::creating(function ($category) {
-            // Kalau slug kosong, buat otomatis dari nama
+            // Kalau alamat web kosong, buat otomatis dari nama
             if (empty($category->slug)) {
                 // Str::slug ubah "Tutorial Laravel" jadi "tutorial-laravel"
                 $category->slug = Str::slug($category->name);
@@ -653,14 +653,14 @@ class CategorySeeder extends Seeder
             ],
         ];
 
-        // Loop setiap kategori dan simpan ke database
+        // Ulang setiap kategori dan simpan ke database
         foreach ($categories as $category) {
             Category::updateOrCreate(
-                ['slug' => $category['slug']], // Cek: apakah kategori dengan slug ini sudah ada?
-                $category                       // Kalau belum ada -> buat baru, kalau sudah ada -> update
+                ['slug' => $category['slug']], // Cek: apakah kategori dengan alamat web ini sudah ada?
+                $category                       // Kalau belum ada -> buat baru, kalau sudah ada -> perbarui
             );
-            // updateOrCreate = smart method: cek dulu, baru create atau update
-            // Jadi aman dijalankan berulang kali tanpa error
+            // updateOrCreate = cara pintar: cek dulu, baru buat atau perbarui
+            // Jadi aman dijalankan berulang kali tanpa galat
         }
     }
 }
