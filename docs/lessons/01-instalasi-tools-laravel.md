@@ -16,6 +16,7 @@ Setelah menyelesaikan pelajaran ini, Anda akan:
 Laravel 12 membutuhkan PHP minimal versi 8.2. Periksa versi PHP Anda:
 
 ```bash
+# Cek versi PHP yang terinstall di sistem
 php --version
 ```
 
@@ -28,6 +29,7 @@ php --version
 Composer adalah dependency manager untuk PHP yang wajib untuk Laravel.
 
 ```bash
+# Verifikasi instalasi Composer
 composer --version
 ```
 
@@ -39,7 +41,10 @@ composer --version
 Diperlukan untuk asset compilation (CSS, JavaScript).
 
 ```bash
+# Cek versi Node.js
 node --version
+
+# Cek versi NPM (Node Package Manager)
 npm --version
 ```
 
@@ -63,6 +68,8 @@ Rekomendasi:
 Buka terminal/command prompt dan jalankan:
 
 ```bash
+# Membuat project Laravel baru dengan nama "blog-laravel"
+# Composer akan download Laravel dan semua dependencies-nya
 composer create-project laravel/laravel blog-laravel
 ```
 
@@ -74,6 +81,7 @@ Proses ini akan:
 ### Step 2: Masuk ke Direktori Project
 
 ```bash
+# Pindah ke direktori project yang baru dibuat
 cd blog-laravel
 ```
 
@@ -97,12 +105,13 @@ Sebelum konfigurasi Laravel, kita perlu menyiapkan database MySQL:
 Laravel menggunakan file `.env` untuk konfigurasi. Edit file `.env`:
 
 ```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=laravel_blog
-DB_USERNAME=root
-DB_PASSWORD=
+# Konfigurasi Database MySQL
+DB_CONNECTION=mysql          # Jenis database yang digunakan
+DB_HOST=127.0.0.1           # Alamat IP server database (localhost)
+DB_PORT=3306                # Port MySQL default
+DB_DATABASE=laravel_blog    # Nama database yang sudah dibuat di phpMyAdmin
+DB_USERNAME=root            # Username MySQL (default XAMPP)
+DB_PASSWORD=                # Password kosong untuk XAMPP default
 ```
 
 **Pastikan menghapus tanda # (uncomment) pada semua baris DB_* di atas!**
@@ -110,6 +119,7 @@ DB_PASSWORD=
 ### Step 5: Generate Application Key
 
 ```bash
+# Generate unique application key untuk enkripsi data
 php artisan key:generate
 ```
 
@@ -120,6 +130,7 @@ php artisan key:generate
 Laravel sudah menyediakan beberapa migration default. Jalankan:
 
 ```bash
+# Menjalankan migration untuk membuat tabel users, password_resets, dll
 php artisan migrate
 ```
 
@@ -136,6 +147,7 @@ Migrated:  2014_10_12_000000_create_users_table (25.67ms)
 Sekarang mari kita test instalasi dengan menjalankan server:
 
 ```bash
+# Menjalankan development server Laravel di localhost:8000
 php artisan serve
 ```
 

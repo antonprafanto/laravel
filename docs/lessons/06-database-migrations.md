@@ -380,28 +380,30 @@ class Category extends Model
 {
     use HasFactory;
 
+    // Kolom yang bisa diisi secara mass assignment
     protected $fillable = [
-        'name',
-        'slug',
-        'description',
-        'color',
-        'is_active',
-        'sort_order',
+        'name',        // Nama kategori
+        'slug',        // URL-friendly version dari nama
+        'description', // Deskripsi kategori
+        'color',       // Warna untuk UI (hex code)
+        'is_active',   // Status aktif/tidak aktif
+        'sort_order',  // Urutan tampilan
     ];
 
+    // Automatic type casting untuk kolom database
     protected $casts = [
-        'is_active' => 'boolean',
-        'sort_order' => 'integer',
+        'is_active' => 'boolean',  // Convert 0/1 ke true/false
+        'sort_order' => 'integer', // Pastikan integer
     ];
 
     /**
-     * Boot the model.
+     * Boot the model - event lifecycle
      */
     protected static function boot()
     {
         parent::boot();
 
-        // Auto-generate slug from name
+        // Auto-generate slug dari name saat creating record baru
         static::creating(function ($category) {
             if (empty($category->slug)) {
                 $category->slug = Str::slug($category->name);
@@ -645,11 +647,13 @@ class CategorySeeder extends Seeder
             ],
         ];
 
+        // Loop setiap kategori dan insert/update ke database
         foreach ($categories as $category) {
             Category::updateOrCreate(
-                ['slug' => $category['slug']], // Check by slug
-                $category // Data to create or update
+                ['slug' => $category['slug']], // Cari berdasarkan slug (unique)
+                $category // Data yang akan dibuat atau diupdate
             );
+            // updateOrCreate = update jika ada, create jika belum ada
         }
     }
 }

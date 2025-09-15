@@ -515,32 +515,32 @@ class BlogController extends Controller
      */
     public function index()
     {
-        // Get featured post
-        $featuredPost = Post::published()
-                          ->featured()
-                          ->with(['category', 'author'])
-                          ->first();
+        // Ambil 1 post featured untuk highlight di homepage
+        $featuredPost = Post::published()          // Hanya post yang sudah publish
+                          ->featured()             // Hanya post yang di-mark featured
+                          ->with(['category', 'author']) // Eager load relasi untuk performa
+                          ->first();               // Ambil 1 record pertama
 
-        // Get recent posts (excluding featured)
-        $posts = Post::published()
-                   ->with(['category', 'author'])
+        // Ambil post terbaru (kecuali featured post)
+        $posts = Post::published()                 // Hanya post published
+                   ->with(['category', 'author'])  // Eager load relasi
                    ->when($featuredPost, function ($query, $featuredPost) {
-                       return $query->where('id', '!=', $featuredPost->id);
+                       return $query->where('id', '!=', $featuredPost->id); // Exclude featured
                    })
-                   ->recent(6)
+                   ->recent(6)                     // Scope: order by terbaru, limit 6
                    ->get();
 
-        // Get categories with post count
-        $categories = Category::active()
-                            ->ordered()
-                            ->withCount(['publishedPosts'])
+        // Ambil kategori aktif dengan jumlah post
+        $categories = Category::active()           // Scope: hanya yang is_active = true
+                            ->ordered()            // Scope: order by sort_order, name
+                            ->withCount(['publishedPosts']) // Count relasi posts
                             ->get();
 
-        // Get popular tags
-        $popularTags = Tag::has('posts')
-                         ->withCount(['publishedPosts'])
-                         ->orderBy('published_posts_count', 'desc')
-                         ->limit(10)
+        // Ambil tag populer berdasarkan jumlah post
+        $popularTags = Tag::has('posts')           // Hanya tag yang punya minimal 1 post
+                         ->withCount(['publishedPosts']) // Count published posts
+                         ->orderBy('published_posts_count', 'desc') // Sort by count desc
+                         ->limit(10)               // Ambil 10 teratas
                          ->get();
 
         return view('blog.index', compact(

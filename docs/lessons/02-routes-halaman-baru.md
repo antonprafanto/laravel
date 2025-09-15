@@ -44,13 +44,14 @@ Edit file `routes/web.php`:
 
 use Illuminate\Support\Facades\Route;
 
+// Route untuk halaman utama (homepage)
 Route::get('/', function () {
-    return view('welcome');
+    return view('welcome'); // Menampilkan view welcome.blade.php
 });
 
-// Route baru untuk blog
+// Route baru untuk halaman blog
 Route::get('/blog', function () {
-    return view('blog.index');
+    return view('blog.index'); // Menampilkan view blog/index.blade.php
 });
 ```
 
@@ -59,6 +60,7 @@ Route::get('/blog', function () {
 Pertama, buat direktori untuk view blog:
 
 ```bash
+# Membuat folder blog di dalam direktori views
 mkdir resources/views/blog
 ```
 
