@@ -497,9 +497,9 @@ class BlogController extends Controller
         // Cari artikel terbaru lainnya (selain yang unggulan)
         $posts = Post::published()                 // Artikel yang sudah terbit
                    ->with(['category', 'author'])  // Ambil juga data kategori & penulis
-                   ->when($featuredPost, function ($pencarian, $featuredPost) {
+                   ->when($featuredPost, function ($query, $featuredPost) {
                        // Kalau ada artikel unggulan, jangan tampilkan lagi di daftar biasa
-                       return $pencarian->where('id', '!=', $featuredPost->id);
+                       return $query->where('id', '!=', $featuredPost->id);
                    })
                    ->recent(6)                     // Urutkan terbaru dulu, ambil 6 artikel
                    ->get();                        // Jalankan pencarian, dapat daftar artikel
@@ -511,7 +511,7 @@ class BlogController extends Controller
                             ->get();
 
         // Cari label yang populer (banyak artikel pakai label ini)
-        $labelPopuler = Tag::has('posts')          // Label yang punya artikel (minimal 1)
+        $popularTags = Tag::has('posts')           // Label yang punya artikel (minimal 1)
                          ->withCount(['publishedPosts']) // Hitung berapa artikel per label
                          ->orderBy('published_posts_count', 'desc') // Urutkan: yang paling banyak artikel di atas
                          ->limit(10)               // Ambil 10 label teratas aja
@@ -522,7 +522,7 @@ class BlogController extends Controller
             'featuredPost',  // Data artikel unggulan
             'posts',         // Data artikel biasa (daftar)
             'categories',    // Data semua kategori
-            'labelPopuler'   // Data label populer
+            'popularTags'    // Data label populer
         ));
         // compact() = jalan pintas untuk buat daftar: ['featuredPost' => $featuredPost, ...]
     }
@@ -539,28 +539,28 @@ class BlogController extends Controller
         $post->load(['category', 'author', 'tags']);
 
         // Cari artikel terkait (kategori sama)
-        $artikelTerkait = Post::published()
+        $relatedPosts = Post::published()
                           ->where('id', '!=', $post->id)
                           ->where('category_id', $post->category_id)
                           ->recent(3)
                           ->get();
 
         // Cari artikel sebelum/sesudah
-        $artikelSebelum = Post::published()
+        $previousPost = Post::published()
                           ->where('published_at', '<', $post->published_at)
                           ->orderBy('published_at', 'desc')
                           ->first();
 
-        $artikelSesudah = Post::published()
+        $nextPost = Post::published()
                       ->where('published_at', '>', $post->published_at)
                       ->orderBy('published_at', 'asc')
                       ->first();
 
         return view('blog.show', compact(
             'post',
-            'artikelTerkait',
-            'artikelSebelum',
-            'artikelSesudah'
+            'relatedPosts',
+            'previousPost',
+            'nextPost'
         ));
     }
 
@@ -848,12 +848,12 @@ Edit `resources/views/components/layout/sidebar.blade.php`:
         </div>
     </div>
     
-    @if(isset($labelPopuler) && $labelPopuler->count() > 0)
+    @if(isset($popularTags) && $popularTags->count() > 0)
     <!-- Popular Tags -->
     <div class="bg-white rounded-xl shadow-sm p-6">
         <h3 class="font-bold text-gray-900 mb-4">Popular Tags</h3>
         <div class="flex flex-wrap gap-2">
-            @foreach($labelPopuler as $tag)
+            @foreach($popularTags as $tag)
             <a href="{{ route('blog.tag', $tag) }}"
                class="bg-gray-100 hover:bg-primary-100 text-gray-700 hover:text-primary-700 px-3 py-1 rounded-full text-sm transition-colors">
                 {{ $tag->name }}
@@ -919,10 +919,10 @@ class PostSeeder extends Seeder
         $phpCategory = Category::where('slug', 'php-programming')->first();
 
         // Ambil label yang sudah ada
-        $labelLaravel = Tag::where('slug', 'laravel')->first();
-        $labelPhp = Tag::where('slug', 'php')->first();
-        $labelTutorial = Tag::where('slug', 'tutorial')->first();
-        $labelPemula = Tag::where('slug', 'beginner')->first();
+        $laravelTag = Tag::where('slug', 'laravel')->first();
+        $phpTag = Tag::where('slug', 'php')->first();
+        $tutorialTag = Tag::where('slug', 'tutorial')->first();
+        $beginnerTag = Tag::where('slug', 'beginner')->first();
 
         $posts = [
             [
@@ -935,7 +935,7 @@ class PostSeeder extends Seeder
                 'user_id' => $admin->id,
                 'category_id' => $laravelCategory->id,
                 'views_count' => 156,
-                'tags' => [$labelLaravel, $labelTutorial, $labelPemula],
+                'tags' => [$laravelTag, $tutorialTag, $beginnerTag],
             ],
             [
                 'title' => 'Laravel Eloquent: Tips dan Tricks untuk Developer',
@@ -947,7 +947,7 @@ class PostSeeder extends Seeder
                 'user_id' => $admin->id,
                 'category_id' => $laravelCategory->id,
                 'views_count' => 124,
-                'tags' => [$labelLaravel, $labelPhp],
+                'tags' => [$laravelTag, $phpTag],
             ],
             [
                 'title' => 'Membuat REST API dengan Laravel Sanctum',
@@ -959,7 +959,7 @@ class PostSeeder extends Seeder
                 'user_id' => $admin->id,
                 'category_id' => $laravelCategory->id,
                 'views_count' => 89,
-                'tags' => [$labelLaravel, $labelTutorial],
+                'tags' => [$laravelTag, $tutorialTag],
             ],
             [
                 'title' => 'Optimasi Performa Aplikasi Laravel',
@@ -971,7 +971,7 @@ class PostSeeder extends Seeder
                 'user_id' => $admin->id,
                 'category_id' => $laravelCategory->id,
                 'views_count' => 203,
-                'tags' => [$labelLaravel, $labelPhp],
+                'tags' => [$laravelTag, $phpTag],
             ],
             [
                 'title' => 'PHP 8.3: Fitur Baru yang Wajib Diketahui',
@@ -983,14 +983,14 @@ class PostSeeder extends Seeder
                 'user_id' => $admin->id,
                 'category_id' => $phpCategory->id,
                 'views_count' => 67,
-                'tags' => [$labelPhp, $labelTutorial],
+                'tags' => [$phpTag, $tutorialTag],
             ],
         ];
 
         // Loop setiap artikel dan simpan ke database
         foreach ($posts as $postData) {
             // Pisahkan label dari data artikel (karena label punya tabel sendiri)
-            $labelArtikel = $postData['tags'];  // Ambil dulu data label-nya
+            $tags = $postData['tags'];          // Ambil dulu data label-nya
             unset($postData['tags']);           // Hapus label dari array artikel
 
             // Buat atau update artikel
@@ -1000,7 +1000,7 @@ class PostSeeder extends Seeder
             );
 
             // Hubungkan artikel dengan label (many-to-many relationship)
-            $post->tags()->sync($labelArtikel); // sync = hapus label lama, pasang label baru
+            $post->tags()->sync($tags);         // sync = hapus label lama, pasang label baru
         }
     }
 
