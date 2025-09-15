@@ -1027,7 +1027,7 @@ class PostSeeder extends Seeder
 
     private function getLaravelContent()
     {
-        return '
+        return <<<'EOD'
 # Memulai dengan Laravel 12
 
 Laravel adalah framework PHP yang paling populer dan powerful untuk membangun aplikasi web modern. Dalam artikel ini, kita akan membahas langkah-langkah untuk memulai project Laravel 12 dari nol.
@@ -1048,295 +1048,85 @@ cd my-project
 php artisan serve
 ```
 
-## Fitur Baru Laravel 12
-
-Laravel 12 membawa beberapa fitur menarik:
-
-1. **Improved Performance** - Optimasi query dan caching
-2. **Better Developer Experience** - Tools debugging yang lebih baik
-3. **Enhanced Security** - Security features yang lebih kuat
-
-## Langkah Selanjutnya
-
-Setelah instalasi berhasil, Anda bisa mulai:
-
-- Membuat model dan migration
-- Setup authentication
-- Membangun fitur CRUD
-- Deploy ke production
-
-Laravel memberikan foundation yang solid untuk membangun aplikasi web yang scalable dan maintainable.
-
-Sekarang aplikasi Laravel Anda sudah berjalan di http://localhost:8000 dan siap untuk development lebih lanjut.
-        ';
+Sekarang aplikasi Laravel Anda sudah berjalan di http://localhost:8000
+EOD;
     }
 
     private function getEloquentContent()
     {
-        return '
-# Laravel Eloquent: Tips dan Tricks
+        return <<<'EOD'
+# Laravel Eloquent Tips dan Tricks
 
-Eloquent adalah ORM bawaan Laravel yang sangat powerful. Berikut beberapa tips yang akan meningkatkan produktivitas Anda.
+Eloquent ORM adalah salah satu fitur terbaik Laravel yang membuat database interaction menjadi mudah dan elegant.
 
-## 1. Eager Loading
+## Tips Performance
 
-Hindari N+1 problem dengan eager loading:
-
-```php
-// Bad - N+1 problem
-$posts = Post::all();
-foreach ($posts as $post) {
-    echo $post->user->name;
-}
-
-// Good - Eager loading
-$posts = Post::with(\'user\')->get();
-```
-
-## 2. Query Scopes
-
-Buat reusable query dengan scopes:
-
-```php
-// Model
-public function scopePublished($query)
-{
-    return $query->where(\'status\', \'published\');
-}
-
-// Usage
-$posts = Post::published()->get();
-```
-
-## 3. Mass Assignment
-
-Gunakan fillable atau guarded:
-
-```php
-protected $fillable = [\'title\', \'content\', \'status\'];
-
-// Create
-Post::create($request->all());
-```
-
-Tips-tips ini akan membuat kode Eloquent Anda lebih clean dan efficient.
-        ';
+1. **Eager Loading** - Gunakan `with()` untuk menghindari N+1 query problem
+2. **Chunk Processing** - Gunakan `chunk()` untuk memproses data besar
+3. **Select Specific Columns** - Gunakan `select()` untuk mengurangi memory usage
+EOD;
     }
 
     private function getApiContent()
     {
-        return '
+        return <<<'EOD'
 # Membuat REST API dengan Laravel Sanctum
 
-API adalah backbone dari aplikasi modern. Laravel Sanctum menyediakan authentication system yang lightweight untuk API.
+Laravel Sanctum memberikan authentication system yang ringan untuk SPA dan API sederhana.
 
 ## Setup Sanctum
 
-Install dan setup Sanctum:
-
 ```bash
 composer require laravel/sanctum
-php artisan vendor:publish --provider=\\\"Laravel\\\\Sanctum\\\\SanctumServiceProvider\\\"
+php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
 php artisan migrate
 ```
 
-## Authentication
+## Implementasi Authentication
 
-Setup token-based authentication:
-
-```php
-// Login endpoint
-public function login(Request $request)
-{
-    $credentials = $request->only(\'email\', \'password\');
-
-    if (Auth::attempt($credentials)) {
-        $user = Auth::user();
-        $token = $user->createToken(\'API Token\')->plainTextToken;
-
-        return response()->json([
-            \'token\' => $token,
-            \'user\' => $user
-        ]);
-    }
-
-    return response()->json([\'message\' => \'Invalid credentials\'], 401);
-}
-```
-
-## API Resources
-
-Gunakan API Resources untuk format response yang konsisten:
-
-```php
-php artisan make:resource PostResource
-
-class PostResource extends JsonResource
-{
-    public function toArray($request)
-    {
-        return [
-            \'id\' => $this->id,
-            \'title\' => $this->title,
-            \'content\' => $this->content,
-            \'author\' => $this->user->name,
-            \'created_at\' => $this->created_at->toDateTimeString(),
-        ];
-    }
-}
-```
-
-Sanctum memberikan keamanan yang baik tanpa kompleksitas OAuth.
-        ';
+Sanctum memungkinkan setiap user memiliki multiple API token dengan scopes yang berbeda.
+EOD;
     }
 
     private function getPerformanceContent()
     {
-        return '
+        return <<<'EOD'
 # Optimasi Performa Laravel
 
-Performa adalah aspek penting dalam aplikasi web. Berikut teknik-teknik optimasi untuk Laravel.
+Performa adalah kunci kesuksesan aplikasi web modern. Berikut tips optimasi Laravel:
 
-## 1. Database Optimization
+## Database Optimization
 
-### Query Optimization
-```php
-// Gunakan select() untuk field yang dibutuhkan saja
-$posts = Post::select(\'id\', \'title\', \'created_at\')->get();
+1. **Query Optimization** - Gunakan database indexes
+2. **Caching** - Implement Redis atau Memcached
+3. **Connection Pooling** - Optimize database connections
 
-// Gunakan chunk() untuk dataset besar
-Post::chunk(100, function ($posts) {
-    foreach ($posts as $post) {
-        // Process posts
-    }
-});
-```
+## Application Level
 
-### Database Indexing
-```php
-// Migration
-$table->index(\'email\');
-$table->index([\'status\', \'created_at\']);
-```
-
-## 2. Caching
-
-### Query Caching
-```php
-$posts = Cache::remember(\'posts\', 3600, function () {
-    return Post::published()->with(\'author\')->get();
-});
-```
-
-### View Caching
-```bash
-php artisan view:cache
-php artisan config:cache
-php artisan route:cache
-```
-
-## 3. Asset Optimization
-
-### Vite Optimization
-```javascript
-// vite.config.js
-export default defineConfig({
-    build: {
-        rollupOptions: {
-            output: {
-                manualChunks: {
-                    vendor: [\\\"lodash\\\", \\\"axios\\\"],
-                },
-            },
-        },
-    },
-});
-```
-
-## 4. Application-Level Optimization
-
-### Lazy Loading
-```php
-// Model
-protected $with = [\'author\']; // Always eager load
-
-// Or conditional
-public function scopeWithAuthor($query)
-{
-    return $query->with(\'author\');
-}
-```
-
-Dengan optimasi ini, aplikasi Laravel Anda bisa perform 5-10x lebih cepat.
-        ';
+- Route Caching
+- Config Caching
+- View Caching
+- Opcache enabled
+EOD;
     }
 
     private function getPhpContent()
     {
-        return '
-# PHP 8.3: Fitur Baru yang Wajib Diketahui
+        return <<<'EOD'
+# PHP 8.3 Fitur Terbaru
 
-PHP 8.3 membawa banyak improvement dan fitur baru yang menarik untuk developer.
+PHP 8.3 membawa berbagai improvement yang signifikan untuk developer.
 
-## 1. Typed Class Constants
+## Fitur Utama
 
-```php
-class Status
-{
-    public const string DRAFT = \\\"draft\\\";
-    public const string PUBLISHED = \\\"published\\\";
-    public const int MAX_LENGTH = 100;
-}
-```
+1. **Typed Class Constants** - Type hints untuk class constants
+2. **Dynamic Class Constant Fetch** - Fetch constants dinamically
+3. **Override Attribute** - Explicit method overriding
 
-## 2. Dynamic Class Constant Fetch
+## Performance Improvements
 
-```php
-$status = Status::{\\\"DRAFT\\\"}; // \\\"draft\\\"
-$constant = \\\"MAX_LENGTH\\\";
-$value = Status::{$constant}; // 100
-```
-
-## 3. New json_validate() Function
-
-```php
-// Sebelumnya
-$isValid = json_decode($json) !== null && json_last_error() === JSON_ERROR_NONE;
-
-// PHP 8.3
-$isValid = json_validate($json);
-```
-
-## 4. New Randomizer Class
-
-```php
-$randomizer = new \\\\Random\\\\Randomizer();
-
-// Generate random string
-$string = $randomizer->getBytesFromString(\\\"abcdef\\\", 10);
-
-// Shuffle array
-$shuffled = $randomizer->shuffleArray([1, 2, 3, 4, 5]);
-```
-
-## 5. Performance Improvements
-
-PHP 8.3 memberikan:
-- 5-10% performance boost
-- Better memory usage
-- Faster startup time
-
-## Migration Tips
-
-Untuk migrate ke PHP 8.3:
-
-1. Check compatibility dengan `composer outdated`
-2. Update dependencies
-3. Test thoroughly
-4. Monitor performance
-
-PHP 8.3 adalah upgrade yang worthwhile untuk aplikasi Laravel modern.
-        ';
+PHP 8.3 memberikan performance boost hingga 15% dibanding versi sebelumnya.
+EOD;
     }
 }
 ```
