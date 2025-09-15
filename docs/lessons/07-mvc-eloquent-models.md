@@ -1204,6 +1204,62 @@ App\Models\Post::featured()->first();
 App\Models\Category::withCount('publishedPosts')->get();
 ```
 
+### 🔧 Troubleshooting - Variable Mismatch Error
+
+#### Undefined Variable $recentPosts
+
+**Error yang mungkin terjadi:**
+```
+Undefined variable $recentPosts (View: resources/views/blog/index.blade.php)
+```
+
+**Penyebab:** Mismatch antara variable yang dikirim controller dan yang digunakan di view.
+
+**Solusi:**
+
+1. **Periksa variable yang dikirim controller:**
+```php
+// Di BlogController@index
+return view('blog.index', compact(
+    'featuredPost',
+    'recentPosts',  // ✅ Controller mengirim $recentPosts
+    'categories',
+    'popularTags'
+));
+```
+
+2. **Pastikan view menggunakan variable yang sama:**
+```blade
+{{-- Di blog/index.blade.php --}}
+@if($recentPosts->count() > 0)  {{-- ✅ Gunakan $recentPosts --}}
+    @foreach($recentPosts as $post)
+        {{-- Post content --}}
+    @endforeach
+@endif
+```
+
+**❌ Jangan gunakan:**
+```blade
+@if($posts->count() > 0)        {{-- ❌ Variable tidak ada --}}
+@foreach($posts as $post)       {{-- ❌ Variable tidak ada --}}
+```
+
+3. **Untuk consistency, bisa juga ubah controller:**
+```php
+// Alternatif: ubah variable di controller jadi $posts
+$posts = Post::published()  // Ganti $recentPosts jadi $posts
+           ->with(['category', 'author'])
+           ->recent(6)
+           ->get();
+
+return view('blog.index', compact(
+    'featuredPost',
+    'posts',        // Kirim $posts
+    'categories',
+    'popularTags'
+));
+```
+
 ## 🎯 Kesimpulan
 
 Selamat! Anda telah berhasil:
