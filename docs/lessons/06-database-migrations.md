@@ -10,6 +10,8 @@ Setelah menyelesaikan pelajaran ini, Anda akan:
 - ✅ Membuat migrations untuk semua tabel yang dibutuhkan
 - ✅ Menjalankan dan rollback migrations
 - ✅ Memahami foreign key constraints dan relationships
+- ✅ Membuat Eloquent models yang sesuai dengan tabel database
+- ✅ Memahami urutan yang benar: Migration → Model → Seeder
 
 ## 🗃️ Perencanaan Database
 
@@ -353,9 +355,243 @@ Berikut adalah relasi antar tabel:
                                                └─────────────┘
 ```
 
+## 📝 Membuat Eloquent Models
+
+### Step 6: Membuat Model Category
+
+**PENTING**: Sebelum membuat seeder, kita harus membuat model terlebih dahulu agar seeder bisa menggunakan model tersebut.
+
+```bash
+php artisan make:model Category
+```
+
+Edit file `app/Models/Category.php`:
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
+
+class Category extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'name',
+        'slug',
+        'description',
+        'color',
+        'is_active',
+        'sort_order',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'sort_order' => 'integer',
+    ];
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Auto-generate slug from name
+        static::creating(function ($category) {
+            if (empty($category->slug)) {
+                $category->slug = Str::slug($category->name);
+            }
+        });
+    }
+
+    /**
+     * Get posts that belong to this category.
+     */
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    /**
+     * Scope for active categories.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope for ordered categories.
+     */
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order')->orderBy('name');
+    }
+}
+```
+
+### Step 7: Membuat Model Tag
+
+```bash
+php artisan make:model Tag
+```
+
+Edit file `app/Models/Tag.php`:
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
+
+class Tag extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'name',
+        'slug',
+        'color',
+    ];
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Auto-generate slug from name
+        static::creating(function ($tag) {
+            if (empty($tag->slug)) {
+                $tag->slug = Str::slug($tag->name);
+            }
+        });
+    }
+
+    /**
+     * Get posts that have this tag.
+     */
+    public function posts()
+    {
+        return $this->belongsToMany(Post::class);
+    }
+}
+```
+
+### Step 8: Membuat Model Post (Preview)
+
+```bash
+php artisan make:model Post
+```
+
+Edit file `app/Models/Post.php`:
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
+
+class Post extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'title',
+        'slug',
+        'excerpt',
+        'content',
+        'featured_image',
+        'status',
+        'is_featured',
+        'published_at',
+        'views_count',
+        'meta_title',
+        'meta_description',
+        'user_id',
+        'category_id',
+    ];
+
+    protected $casts = [
+        'is_featured' => 'boolean',
+        'published_at' => 'datetime',
+        'views_count' => 'integer',
+    ];
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Auto-generate slug from title
+        static::creating(function ($post) {
+            if (empty($post->slug)) {
+                $post->slug = Str::slug($post->title);
+            }
+        });
+    }
+
+    /**
+     * Get the user that owns the post.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the category that owns the post.
+     */
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Get the tags for the post.
+     */
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class);
+    }
+
+    /**
+     * Scope for published posts.
+     */
+    public function scopePublished($query)
+    {
+        return $query->where('status', 'published')
+                    ->whereNotNull('published_at')
+                    ->where('published_at', '<=', now());
+    }
+
+    /**
+     * Scope for featured posts.
+     */
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true);
+    }
+}
+```
+
 ## 💾 Database Seeders (Bonus)
 
-### Step 7: Membuat Sample Data
+### Step 9: Membuat Sample Data
 
 Buat seeder untuk testing:
 
@@ -549,7 +785,7 @@ $table->unique('email'); // Unique constraint
 
 ## ✅ Verifikasi Migration
 
-### Step 8: Test Database Structure
+### Step 10: Test Database Structure
 
 Coba jalankan beberapa query untuk memastikan struktur benar:
 
@@ -583,14 +819,17 @@ try {
 
 ## 🎯 Kesimpulan
 
-Selamat! Database structure telah berhasil dibuat:
+Selamat! Database structure dan models telah berhasil dibuat:
 - ✅ Migration untuk 4 tabel utama (categories, posts, tags, post_tag)
 - ✅ Foreign key constraints yang proper
 - ✅ Indexes untuk performance optimization
-- ✅ Seeder untuk sample data
+- ✅ Eloquent models (Category, Tag, Post) dengan relationships
+- ✅ Seeder untuk sample data (dengan model yang sudah siap)
 - ✅ Database relationship yang terstruktur
 
-Sekarang kita memiliki fondasi database yang solid untuk aplikasi blog. Di pelajaran selanjutnya, kita akan membuat Eloquent models dan mulai menggunakan data dari database.
+**Urutan yang benar telah diikuti**: Migration → Model → Seeder
+
+Sekarang kita memiliki fondasi database yang solid untuk aplikasi blog. Di pelajaran selanjutnya, kita akan menggunakan models ini untuk menampilkan data di controllers dan views.
 
 ## 💡 Troubleshooting
 
@@ -605,6 +844,53 @@ Sekarang kita memiliki fondasi database yang solid untuk aplikasi blog. Di pelaj
 **Error: "Column not found"**
 - Check typo dalam nama kolom
 - Pastikan migration sudah di-run
+
+### ⚠️ Error Model Tidak Ditemukan di Seeder
+
+**Error: "Undefined type 'App\Models\Category'"**
+- **Lokasi**: `database/seeders/CategorySeeder.php` baris 41
+- **Penyebab**: Model Category belum dibuat saat seeder dijalankan
+- **Solusi**:
+  1. Buat model terlebih dahulu: `php artisan make:model Category`
+  2. Isi model dengan fillable dan relationships yang sesuai
+  3. Baru kemudian jalankan seeder
+
+**Error: "Undefined type 'App\Models\Tag'"**
+- **Lokasi**: `database/seeders/TagSeeder.php` baris 22
+- **Penyebab**: Model Tag belum dibuat saat seeder dijalankan
+- **Solusi**:
+  1. Buat model terlebih dahulu: `php artisan make:model Tag`
+  2. Isi model dengan fillable dan relationships yang sesuai
+  3. Baru kemudian jalankan seeder
+
+### 🔄 Urutan yang Benar untuk Migration + Models + Seeders:
+
+```bash
+# 1. Buat migrations terlebih dahulu
+php artisan make:migration create_categories_table
+php artisan make:migration create_posts_table
+php artisan make:migration create_tags_table
+php artisan make:migration create_post_tag_table
+
+# 2. Edit file migration (isi struktur tabel)
+
+# 3. Jalankan migrations
+php artisan migrate
+
+# 4. PENTING: Buat models sebelum seeder
+php artisan make:model Category
+php artisan make:model Tag
+php artisan make:model Post
+
+# 5. Edit models (fillable, relationships, dll)
+
+# 6. Baru kemudian buat dan jalankan seeders
+php artisan make:seeder CategorySeeder
+php artisan make:seeder TagSeeder
+php artisan db:seed
+```
+
+**Catatan**: Model harus dibuat dan dikonfigurasi sebelum seeder karena seeder menggunakan model untuk memasukkan data ke database.
 
 ---
 
