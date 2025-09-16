@@ -2,6 +2,26 @@
 
 Setelah instalasi berhasil, sekarang kita akan belajar cara kerja routing di Laravel dan membuat halaman pertama untuk blog kita.
 
+## 🗺️ Analogi: Routing = Sistem GPS di Mall
+
+Bayangkan Anda ke mall besar yang punya 5 lantai. Di pintu masuk ada **papan petunjuk** (routing) yang menunjukkan:
+
+**🏪 Routing Mall:**
+- `/` = Lobby utama (homepage)
+- `/food-court` = Lantai 3, area makan
+- `/cinema` = Lantai 4, bioskop
+- `/bookstore` = Lantai 2, toko buku
+
+**💻 Routing Laravel:**
+- `/` = Halaman utama website
+- `/blog` = Halaman daftar artikel
+- `/blog/post/judul-artikel` = Halaman artikel spesifik
+- `/about` = Halaman tentang kami
+
+Ketika pengunjung **klik link** (seperti naik lift ke lantai tertentu), Laravel akan **cek routing table** (seperti GPS mall) dan **kirim mereka ke halaman yang tepat** (seperti antar ke toko yang dimaksud).
+
+**Tanpa routing = seperti mall tanpa petunjuk arah = pengunjung tersesat!** 🤯
+
 ## 🎯 Tujuan Pembelajaran
 
 Setelah menyelesaikan pelajaran ini, Anda akan:
@@ -34,6 +54,8 @@ Route ini berarti:
 - **Action**: Mengembalikan view 'welcome'
 
 ## 📄 Membuat Halaman Blog Pertama
+
+**📄 Analogi View/Blade**: View Template seperti **template surat** yang sudah jadi. Bayangkan Anda punya template surat lamaran kerja - struktur udah ada (header, body, footer), Anda tinggal ganti nama, alamat, dan isi surat sesuai kebutuhan. Blade template juga begitu - struktur HTML sudah ada, tinggal masukkan data dinamis (seperti judul artikel, nama user, dll).
 
 ### Step 1: Membuat Route untuk Homepage Blog
 
