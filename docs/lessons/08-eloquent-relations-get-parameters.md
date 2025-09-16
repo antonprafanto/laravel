@@ -979,6 +979,380 @@ Schema::table('posts', function (Blueprint $table) {
 });
 ```
 
+## 🧪 Pengujian & Validasi Advanced Relationships
+
+Setelah mempelajari Eloquent relationships dan GET parameters yang advanced, mari kita lakukan pengujian komprehensif untuk memastikan semua fitur berfungsi dengan optimal.
+
+### 🔗 Test 1: Verifikasi Eloquent Relationships
+
+**🎯 Tujuan:** Memastikan semua relationship types berfungsi dengan benar dan efisien.
+
+**Test Case 1.1 - hasMany & belongsTo Relationships:**
+```bash
+php artisan tinker
+```
+
+```php
+// Test hasMany: Category memiliki banyak Posts
+$category = Category::first();
+echo "Kategori: " . $category->name;
+echo "Jumlah post: " . $category->posts->count();
+
+// Test belongsTo: Post milik satu Category
+$post = Post::first();
+echo "Post: " . $post->title;
+echo "Kategori: " . $post->category->name;
+
+// Test dengan eager loading
+$categories = Category::with('posts')->get();
+foreach($categories as $cat) {
+    echo $cat->name . " (" . $cat->posts->count() . " posts)";
+}
+```
+
+**Test Case 1.2 - belongsToMany Relationships:**
+```php
+// Test Many-to-Many: Post memiliki banyak Tags
+$post = Post::first();
+echo "Post: " . $post->title;
+echo "Tags: " . $post->tags->pluck('name')->join(', ');
+
+// Test reverse: Tag memiliki banyak Posts
+$tag = Tag::first();
+echo "Tag: " . $tag->name;
+echo "Posts: " . $tag->posts->count();
+
+// Test attach/detach (jika ada form untuk itu)
+$post = Post::first();
+$tag = Tag::first();
+$post->tags()->attach($tag->id);
+echo "Tag attached!";
+```
+
+**✅ Expected Results:**
+- Semua relationships load tanpa error
+- Data yang dikembalikan sesuai dengan relasi yang ada
+- Eager loading mengurangi jumlah query
+
+### 🔍 Test 2: Search & Filtering Functionality
+
+**🎯 Tujuan:** Memastikan search dan filtering berfungsi dengan akurat dan cepat.
+
+**Test Case 2.1 - Basic Search Testing:**
+
+Jalankan server dan test di browser:
+
+1. **Search Sederhana:** `http://127.0.0.1:8000/blog/search?q=laravel`
+   - ✅ Harus tampil posts yang mengandung kata "laravel"
+   - ✅ Search form menampilkan keyword yang dicari
+   - ✅ Hasil search ter-highlight (jika diimplementasi)
+
+2. **Search Kosong:** `http://127.0.0.1:8000/blog/search?q=`
+   - ✅ Harus tampil semua posts atau pesan "masukkan keyword"
+   - ✅ Tidak error meskipun parameter kosong
+
+3. **Search Tidak Ditemukan:** `http://127.0.0.1:8000/blog/search?q=xyz123`
+   - ✅ Harus tampil pesan "tidak ditemukan"
+   - ✅ Saran search lain atau kategori populer
+
+**Test Case 2.2 - Advanced Filtering:**
+
+1. **Filter by Category:** `http://127.0.0.1:8000/blog?category=laravel-framework`
+   - ✅ Tampil hanya posts dalam kategori Laravel Framework
+   - ✅ Pagination bekerja dengan filter
+
+2. **Filter by Tag:** `http://127.0.0.1:8000/blog?tag=tutorial`
+   - ✅ Tampil hanya posts dengan tag "tutorial"
+   - ✅ Tag filter tetap aktif saat pindah halaman
+
+3. **Multiple Filters:** `http://127.0.0.1:8000/blog?category=laravel-framework&tag=tutorial&sort=popular`
+   - ✅ Semua filter diterapkan bersamaan
+   - ✅ URL parameters tetap ada saat navigate
+
+### 📊 Test 3: Query Performance & Optimization
+
+**🎯 Tujuan:** Memastikan query database efisien dan tidak ada N+1 problem.
+
+**Test Case 3.1 - Query Logging:**
+```bash
+php artisan tinker
+```
+
+```php
+// Enable query logging
+DB::enableQueryLog();
+
+// Test query dengan relationships
+$posts = Post::with(['category', 'author', 'tags'])->paginate(10);
+
+// Check queries
+$queries = DB::getQueryLog();
+echo "Total queries: " . count($queries);
+foreach($queries as $query) {
+    echo $query['query'] . "\n";
+}
+
+// Reset log untuk test berikutnya
+DB::flushQueryLog();
+```
+
+**Test Case 3.2 - N+1 Problem Detection:**
+```php
+// Test tanpa eager loading (BAD)
+DB::enableQueryLog();
+
+$posts = Post::paginate(10);
+foreach($posts as $post) {
+    echo $post->category->name; // Triggers N+1 queries
+}
+
+$badQueries = DB::getQueryLog();
+echo "Queries without eager loading: " . count($badQueries);
+
+DB::flushQueryLog();
+
+// Test dengan eager loading (GOOD)
+$posts = Post::with('category')->paginate(10);
+foreach($posts as $post) {
+    echo $post->category->name; // No additional queries
+}
+
+$goodQueries = DB::getQueryLog();
+echo "Queries with eager loading: " . count($goodQueries);
+```
+
+**✅ Expected Results:**
+- Eager loading: 1-3 queries total
+- Tanpa eager loading: 1 + N queries (dimana N = jumlah posts)
+- Query time < 100ms untuk hasil normal
+
+### 🎛️ Test 4: GET Parameters Handling
+
+**🎯 Tujuan:** Memastikan GET parameters diproses dengan benar dan aman.
+
+**Test Case 4.1 - Parameter Validation:**
+```bash
+php artisan tinker
+```
+
+```php
+// Test parameter filtering di controller
+$request = new \Illuminate\Http\Request();
+$request->merge([
+    'category' => 'laravel-framework',
+    'tag' => 'tutorial',
+    'sort' => 'popular',
+    'search' => 'eloquent'
+]);
+
+// Simulate controller method
+$query = Post::published();
+
+if ($request->has('search')) {
+    $query->where(function($q) use ($request) {
+        $search = $request->get('search');
+        $q->where('title', 'like', "%{$search}%")
+          ->orWhere('content', 'like', "%{$search}%");
+    });
+}
+
+$posts = $query->get();
+echo "Posts found: " . $posts->count();
+```
+
+**Test Case 4.2 - URL Parameter Persistence:**
+
+Test di browser dengan berbagai kombinasi:
+
+1. **Base URL:** `http://127.0.0.1:8000/blog`
+   - ✅ Tampil semua posts dengan default sorting
+
+2. **Search + Pagination:** `http://127.0.0.1:8000/blog/search?q=laravel&page=2`
+   - ✅ Search term tetap ada di pagination links
+   - ✅ Page 2 menampilkan hasil search yang benar
+
+3. **Multiple Filters + Pagination:** `http://127.0.0.1:8000/blog?category=laravel&sort=oldest&page=3`
+   - ✅ Semua parameters tetap ada di pagination
+   - ✅ Filter tetap aktif di semua halaman
+
+### 🎨 Test 5: UI/UX Filter Interface
+
+**🎯 Tujuan:** Memastikan interface filtering user-friendly dan responsive.
+
+**Test Case 5.1 - Filter Form:**
+
+1. **Search Form:** Test di halaman blog
+   - ✅ Search input mudah ditemukan
+   - ✅ Placeholder text informatif
+   - ✅ Search button/icon berfungsi
+   - ✅ Enter key submit form
+
+2. **Category Filter:** Test dropdown/links
+   - ✅ Semua kategori tersedia
+   - ✅ Category count ditampilkan
+   - ✅ Active category ter-highlight
+
+3. **Sort Options:** Test sorting dropdown
+   - ✅ Options: newest, oldest, popular, alphabetical
+   - ✅ Active sort option ter-highlight
+   - ✅ Sort change langsung apply
+
+**Test Case 5.2 - Filter State Indicators:**
+
+1. **Active Filters Display:**
+   - ✅ Filter yang aktif ditampilkan jelas
+   - ✅ Ada tombol "clear filter" untuk setiap filter
+   - ✅ "Clear all filters" button tersedia
+
+2. **Results Counter:**
+   - ✅ Jumlah hasil tampil dengan jelas
+   - ✅ "Showing X of Y results" info
+   - ✅ No results state dengan pesan yang helpful
+
+### 🚀 Test 6: Advanced Features Challenge
+
+**🎯 Tujuan:** Implementasi fitur advanced untuk menguji pemahaman komprehensif.
+
+**Challenge Task:** Implementasi fitur "Related Posts" yang cerdas.
+
+**Task 6.1 - Smart Related Posts:**
+```php
+// Tambahkan method di Post model
+public function getRelatedPosts($limit = 3)
+{
+    // Cari posts yang related berdasarkan:
+    // 1. Same category (priority 1)
+    // 2. Same tags (priority 2)
+    // 3. Same author (priority 3)
+
+    $relatedPosts = collect();
+
+    // 1. Same category
+    $sameCategory = Post::published()
+        ->where('id', '!=', $this->id)
+        ->where('category_id', $this->category_id)
+        ->limit($limit)
+        ->get();
+
+    $relatedPosts = $relatedPosts->merge($sameCategory);
+
+    // 2. Same tags (if still need more)
+    if ($relatedPosts->count() < $limit && $this->tags->count() > 0) {
+        $tagIds = $this->tags->pluck('id');
+        $sameTags = Post::published()
+            ->where('id', '!=', $this->id)
+            ->whereHas('tags', function($query) use ($tagIds) {
+                $query->whereIn('tags.id', $tagIds);
+            })
+            ->whereNotIn('id', $relatedPosts->pluck('id'))
+            ->limit($limit - $relatedPosts->count())
+            ->get();
+
+        $relatedPosts = $relatedPosts->merge($sameTags);
+    }
+
+    // 3. Same author (if still need more)
+    if ($relatedPosts->count() < $limit) {
+        $sameAuthor = Post::published()
+            ->where('id', '!=', $this->id)
+            ->where('user_id', $this->user_id)
+            ->whereNotIn('id', $relatedPosts->pluck('id'))
+            ->limit($limit - $relatedPosts->count())
+            ->get();
+
+        $relatedPosts = $relatedPosts->merge($sameAuthor);
+    }
+
+    return $relatedPosts->take($limit);
+}
+```
+
+**Task 6.2 - Search Suggestions:**
+```php
+// Method untuk search suggestions
+public static function getSearchSuggestions($query, $limit = 5)
+{
+    if (strlen($query) < 2) return collect();
+
+    // Cari berdasarkan title yang mirip
+    $titleMatches = Post::published()
+        ->where('title', 'like', "%{$query}%")
+        ->limit($limit)
+        ->pluck('title');
+
+    // Cari berdasarkan tags yang mirip
+    $tagMatches = Tag::where('name', 'like', "%{$query}%")
+        ->limit($limit)
+        ->pluck('name');
+
+    return $titleMatches->merge($tagMatches)->unique()->take($limit);
+}
+```
+
+**✅ Success Criteria:**
+- Related posts algorithm menampilkan posts yang relevant
+- Search suggestions muncul saat mengetik
+- Performance tetap optimal meski fitur bertambah
+- UI tetap clean dan user-friendly
+
+## 📋 Checklist Kelulusan Advanced Relationships
+
+Tandai ✅ untuk setiap test yang berhasil:
+
+### 🔗 Eloquent Relationships
+- [ ] hasMany/belongsTo relationships berfungsi
+- [ ] belongsToMany (many-to-many) relationships berfungsi
+- [ ] Eager loading diterapkan dan mengurangi query count
+- [ ] Relationship methods return data yang benar
+
+### 🔍 Search & Filtering
+- [ ] Basic search berfungsi di title dan content
+- [ ] Category filtering berfungsi dengan benar
+- [ ] Tag filtering berfungsi dengan benar
+- [ ] Multiple filters dapat dikombinasikan
+- [ ] Empty search dan "not found" di-handle dengan baik
+
+### 📊 Performance & Optimization
+- [ ] Query count optimal (< 5 queries untuk list page)
+- [ ] Tidak ada N+1 query problem
+- [ ] Database indexes diterapkan untuk field yang di-filter
+- [ ] Page load time < 300ms untuk hasil normal
+
+### 🎛️ GET Parameters
+- [ ] Parameters di-validate dan di-sanitize
+- [ ] URL parameters persist di pagination
+- [ ] Multiple parameters kombinasi berfungsi
+- [ ] Parameter encoding/decoding benar
+
+### 🎨 UI/UX Interface
+- [ ] Search form user-friendly dan accessible
+- [ ] Filter options jelas dan mudah digunakan
+- [ ] Active filters ditampilkan dengan jelas
+- [ ] Results counter dan pagination informatif
+
+### 🚀 Advanced Features
+- [ ] Related posts algorithm berfungsi
+- [ ] Search suggestions (bonus)
+- [ ] Advanced sorting options
+- [ ] Filter persistence across sessions (bonus)
+
+## 🚨 Performance Troubleshooting
+
+### ❌ Slow Query Issues
+- **Banyak query (N+1)** → Gunakan eager loading `with()`
+- **Query tanpa index** → Tambah database index untuk field yang di-filter
+- **Pagination lambat** → Gunakan `simplePaginate()` untuk dataset besar
+
+### ❌ Search Issues
+- **Search tidak akurat** → Gunakan fulltext index untuk MySQL 5.7+
+- **Search terlalu lambat** → Implementasi caching atau search engine
+- **Special characters error** → Sanitize input dengan `htmlspecialchars()`
+
+### ❌ Filter Issues
+- **Filter tidak persisten** → Cek parameter passing di pagination links
+- **Multiple filter conflict** → Debug query builder dengan `toSql()`
+- **URL too long** → Gunakan POST untuk complex filters
+
 ## 🎯 Kesimpulan
 
 Selamat! Anda telah berhasil:
@@ -987,8 +1361,9 @@ Selamat! Anda telah berhasil:
 - ✅ Menambahkan search functionality yang powerful
 - ✅ Mengoptimalkan query performance
 - ✅ Membuat UI yang user-friendly untuk filtering
+- ✅ **[BARU] Melakukan pengujian komprehensif untuk advanced features**
 
-Di pelajaran selanjutnya, kita akan belajar Route Model Binding dengan parameters yang lebih advanced.
+Dengan pengujian yang telah dilakukan, Anda memastikan bahwa sistem relationships dan filtering telah diimplementasi dengan optimal dan siap untuk production. Di pelajaran selanjutnya, kita akan belajar Route Model Binding dengan parameters yang lebih advanced.
 
 ---
 

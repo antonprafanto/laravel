@@ -753,6 +753,401 @@ public function boot(): void
 }
 ```
 
+## 🧪 Pengujian & Validasi Route Model Binding
+
+Setelah mengimplementasi Route Model Binding yang advanced, mari kita lakukan pengujian komprehensif untuk memastikan semua fitur berfungsi dengan benar dan optimal.
+
+### 🔗 Test 1: Implicit Route Model Binding
+
+**🎯 Tujuan:** Memastikan implicit binding berfungsi dengan benar untuk semua models.
+
+**Test Case 1.1 - Basic Implicit Binding:**
+```bash
+php artisan tinker
+```
+
+```php
+// Test resolving Post by slug
+$post = App\Models\Post::where('slug', 'memulai-perjalanan-dengan-laravel-12')->first();
+if ($post) {
+    echo "Post found: " . $post->title;
+    echo "URL: " . route('blog.show', $post); // Harus generate URL dengan slug
+}
+
+// Test resolving Category by slug
+$category = App\Models\Category::where('slug', 'laravel-framework')->first();
+if ($category) {
+    echo "Category found: " . $category->name;
+    echo "URL: " . route('blog.category', $category);
+}
+
+// Test resolving Tag by slug
+$tag = App\Models\Tag::where('slug', 'laravel')->first();
+if ($tag) {
+    echo "Tag found: " . $tag->name;
+    echo "URL: " . route('blog.tag', $tag);
+}
+```
+
+**Test Case 1.2 - Browser Testing Implicit Binding:**
+
+Jalankan server dan test di browser:
+
+1. **Post Binding:** `http://127.0.0.1:8000/blog/post/memulai-perjalanan-dengan-laravel-12`
+   - ✅ Harus load post berdasarkan slug
+   - ✅ Post data tampil dengan benar
+   - ✅ Tidak ada query tambahan untuk resolve model
+
+2. **Category Binding:** `http://127.0.0.1:8000/blog/category/laravel-framework`
+   - ✅ Harus load category berdasarkan slug
+   - ✅ Posts dalam category tampil
+   - ✅ Pagination berfungsi dengan model binding
+
+3. **Tag Binding:** `http://127.0.0.1:8000/blog/tag/laravel`
+   - ✅ Harus load tag berdasarkan slug
+   - ✅ Posts dengan tag tampil
+   - ✅ Related categories ditampilkan
+
+**✅ Expected Results:**
+- Semua models ter-resolve dengan benar berdasarkan slug
+- Tidak ada error 404 untuk slug yang valid
+- URL generation menggunakan slug bukan ID
+
+### 🎛️ Test 2: Explicit & Custom Route Model Binding
+
+**🎯 Tujuan:** Memastikan custom bindings di RouteServiceProvider berfungsi dengan benar.
+
+**Test Case 2.1 - Custom Binding Logic:**
+```bash
+php artisan tinker
+```
+
+```php
+// Test custom binding dengan constraint published
+// Simulate request untuk public route
+app('request')->server->set('REQUEST_URI', '/blog/post/test-slug');
+
+try {
+    $post = app('App\Models\Post')->resolveRouteBinding('test-slug', 'slug');
+    if ($post) {
+        echo "Published post found: " . $post->title;
+        echo "Status: " . $post->status;
+        echo "Published at: " . $post->published_at;
+    }
+} catch (Exception $e) {
+    echo "Expected: " . $e->getMessage();
+}
+
+// Test admin route (should bypass published constraint)
+app('request')->server->set('REQUEST_URI', '/admin/posts/test-slug');
+// Repeat test - should find unpublished posts too
+```
+
+**Test Case 2.2 - RouteServiceProvider Bindings:**
+
+Test apakah custom bindings terdaftar dengan benar:
+
+```bash
+# Check registered route bindings
+php artisan route:list --columns=uri,action | grep -E "\\{.*\\}"
+```
+
+Expected Output harus menunjukkan parameter binding yang benar:
+```
+blog/post/{post:slug}
+blog/category/{category:slug}
+blog/tag/{tag:slug}
+```
+
+**✅ Expected Results:**
+- Custom bindings di RouteServiceProvider aktif
+- Published constraint diterapkan untuk public routes
+- Admin routes bypass constraint published
+- Error handling custom memberikan pesan yang informatif
+
+### 🔗 Test 3: Scoped Bindings & Nested Routes
+
+**🎯 Tujuan:** Memastikan scoped bindings berfungsi untuk nested parameters.
+
+**Test Case 3.1 - Scoped Category-Post Binding:**
+
+Browser testing untuk nested routes:
+
+1. **Valid Category-Post:** `http://127.0.0.1:8000/blog/category/laravel-framework/post/memulai-perjalanan-dengan-laravel-12`
+   - ✅ Harus load jika post belongs to category
+   - ✅ Post data dan category data konsisten
+   - ✅ Breadcrumb navigation benar
+
+2. **Invalid Category-Post:** `http://127.0.0.1:8000/blog/category/php-programming/post/memulai-perjalanan-dengan-laravel-12`
+   - ✅ Harus return 404 jika post tidak belongs to category
+   - ✅ Error message informatif
+   - ✅ Redirect ke category atau suggestion
+
+**Test Case 3.2 - Scoped Binding Performance:**
+```bash
+php artisan tinker
+```
+
+```php
+// Test query efficiency untuk scoped binding
+DB::enableQueryLog();
+
+// Simulate scoped binding untuk category-post
+$category = App\Models\Category::where('slug', 'laravel-framework')->first();
+$post = $category->posts()->where('slug', 'memulai-perjalanan-dengan-laravel-12')->first();
+
+if ($post) {
+    echo "Post belongs to category: " . $post->category->name;
+}
+
+$queries = DB::getQueryLog();
+echo "Total queries: " . count($queries);
+// Harus hanya 2-3 queries dengan proper eager loading
+```
+
+**✅ Expected Results:**
+- Scoped binding hanya mengembalikan posts yang belongs to category
+- Query count optimal (2-3 queries total)
+- Error 404 yang appropriate untuk invalid combinations
+
+### 📊 Test 4: Performance & Query Optimization
+
+**🎯 Tujuan:** Memastikan route model binding tidak menimbulkan performance issue.
+
+**Test Case 4.1 - Eager Loading dalam Binding:**
+```bash
+php artisan tinker
+```
+
+```php
+// Test apakah eager loading aktif dalam binding
+DB::enableQueryLog();
+
+// Access route yang menggunakan model binding
+$post = App\Models\Post::where('slug', 'memulai-perjalanan-dengan-laravel-12')->with(['category', 'author', 'tags'])->first();
+
+if ($post) {
+    // Access related models
+    echo "Author: " . $post->author->name;
+    echo "Category: " . $post->category->name;
+    echo "Tags: " . $post->tags->pluck('name')->join(', ');
+}
+
+$queries = DB::getQueryLog();
+echo "Queries with eager loading: " . count($queries);
+
+DB::flushQueryLog();
+
+// Test tanpa eager loading
+$post = App\Models\Post::where('slug', 'memulai-perjalanan-dengan-laravel-12')->first();
+if ($post) {
+    echo "Author: " . $post->author->name;    // +1 query
+    echo "Category: " . $post->category->name; // +1 query
+    echo "Tags: " . $post->tags->pluck('name')->join(', '); // +1 query
+}
+
+$badQueries = DB::getQueryLog();
+echo "Queries without eager loading: " . count($badQueries);
+```
+
+**Test Case 4.2 - Caching Route Model Binding:**
+```php
+// Test apakah model binding bisa di-cache
+Cache::remember('post-slug-' . 'memulai-perjalanan-dengan-laravel-12', 3600, function() {
+    return App\Models\Post::where('slug', 'memulai-perjalanan-dengan-laravel-12')
+                          ->with(['category', 'author', 'tags'])
+                          ->first();
+});
+
+echo "Model cached successfully";
+```
+
+**✅ Expected Results:**
+- Eager loading mengurangi query count dari 4+ menjadi 1-2
+- Caching model binding berfungsi tanpa error
+- Response time < 100ms untuk cached requests
+
+### 🛡️ Test 5: Error Handling & Security
+
+**🎯 Tujuan:** Memastikan error handling dan security constraint berfungsi dengan benar.
+
+**Test Case 5.1 - Missing Model Handling:**
+
+Browser testing untuk URL yang tidak valid:
+
+1. **Invalid Slug:** `http://127.0.0.1:8000/blog/post/nonexistent-slug`
+   - ✅ Harus return 404
+   - ✅ Custom error message ditampilkan
+   - ✅ Suggestion untuk posts lain atau search
+
+2. **Unpublished Post:** Test jika ada post dengan status draft
+   - ✅ Public route harus return 404 untuk draft posts
+   - ✅ Admin route (jika ada) harus bisa akses draft posts
+
+3. **Future Published Date:** Test post dengan published_at di masa depan
+   - ✅ Harus return 404 untuk public access
+   - ✅ Constraint published_at <= now() aktif
+
+**Test Case 5.2 - Security Constraints:**
+```bash
+php artisan tinker
+```
+
+```php
+// Test security constraint untuk published posts
+$draftPost = App\Models\Post::create([
+    'title' => 'Draft Post Test',
+    'slug' => 'draft-post-test',
+    'content' => 'This is a draft',
+    'status' => 'draft',
+    'user_id' => 1,
+    'category_id' => 1,
+]);
+
+// Test akses draft post melalui public route
+try {
+    $resolved = app('App\Models\Post')->resolveRouteBinding('draft-post-test', 'slug');
+    echo "ERROR: Draft post accessible!";
+} catch (Exception $e) {
+    echo "CORRECT: " . $e->getMessage();
+}
+
+// Cleanup
+$draftPost->delete();
+```
+
+**✅ Expected Results:**
+- Draft/unpublished posts tidak accessible melalui public routes
+- Future-dated posts tidak accessible sampai published_at
+- Custom error messages informatif dan helpful
+
+### 🎯 Test 6: Advanced Implementation Challenge
+
+**🎯 Tujuan:** Implementasi fitur advanced untuk menguji pemahaman komprehensif.
+
+**Challenge Task:** Implementasi "Smart 404" dengan suggestions.
+
+**Task 6.1 - Smart 404 Handler:**
+```php
+// app/Models/Post.php
+public function resolveRouteBinding($value, $field = null)
+{
+    $post = $this->where($field ?? $this->getRouteKeyName(), $value);
+
+    if (!request()->is('admin/*')) {
+        $post->where('status', 'published')
+             ->where('published_at', '<=', now());
+    }
+
+    $result = $post->with(['category', 'author', 'tags'])->first();
+
+    if (!$result) {
+        // Find similar posts untuk suggestions
+        $suggestions = $this->getSimilarPosts($value);
+
+        // Store suggestions di session untuk error page
+        session(['post_suggestions' => $suggestions]);
+
+        abort(404, 'Post tidak ditemukan');
+    }
+
+    return $result;
+}
+
+private function getSimilarPosts($slug, $limit = 3)
+{
+    // Cari posts dengan slug yang mirip
+    $similar = Post::published()
+        ->where('slug', 'like', '%' . substr($slug, 0, 5) . '%')
+        ->orWhere('title', 'like', '%' . str_replace('-', ' ', $slug) . '%')
+        ->with(['category'])
+        ->limit($limit)
+        ->get();
+
+    return $similar;
+}
+```
+
+**Task 6.2 - Dynamic Route Caching:**
+```php
+// Implementasi caching untuk route model binding
+public static function boot()
+{
+    parent::boot();
+
+    // Cache model setelah resolve
+    static::retrieved(function ($model) {
+        if (request()->route() && request()->route()->parameter($model->getTable())) {
+            $cacheKey = 'model-binding:' . get_class($model) . ':' . $model->getKey();
+            Cache::put($cacheKey, $model, 300); // 5 minutes
+        }
+    });
+}
+```
+
+**✅ Success Criteria:**
+- Smart 404 menampilkan suggestions untuk posts yang mirip
+- Route model binding ter-cache dan mengurangi database hits
+- Performance tetap optimal dengan fitur tambahan
+- Error handling tetap user-friendly
+
+## 📋 Checklist Kelulusan Route Model Binding
+
+Tandai ✅ untuk setiap test yang berhasil:
+
+### 🔗 Implicit Binding
+- [ ] Post, Category, Tag binding by slug berfungsi
+- [ ] URL generation menggunakan model route key
+- [ ] Implicit binding tidak memerlukan manual resolution
+- [ ] Route parameter constraints diterapkan dengan benar
+
+### 🎛️ Explicit & Custom Binding
+- [ ] RouteServiceProvider bindings terdaftar
+- [ ] Custom binding logic (published constraint) berfungsi
+- [ ] Admin routes bypass public constraints
+- [ ] Custom error messages ditampilkan dengan benar
+
+### 🔗 Scoped Bindings
+- [ ] Nested route parameters (category/post) berfungsi
+- [ ] Scoped binding memvalidasi relationships
+- [ ] Invalid combinations return 404 yang appropriate
+- [ ] Query efficiency optimal untuk scoped binding
+
+### 📊 Performance & Optimization
+- [ ] Eager loading aktif dalam route binding
+- [ ] Query count optimal (1-3 queries)
+- [ ] Model binding dapat di-cache
+- [ ] Response time < 100ms untuk requests normal
+
+### 🛡️ Error Handling & Security
+- [ ] Missing models return 404 dengan pesan yang jelas
+- [ ] Unpublished posts tidak accessible via public routes
+- [ ] Future-dated posts di-handle dengan benar
+- [ ] Security constraints tidak dapat di-bypass
+
+### 🎯 Advanced Features
+- [ ] Smart 404 dengan suggestions (bonus)
+- [ ] Dynamic route caching (bonus)
+- [ ] Custom error pages untuk different scenarios
+- [ ] Performance monitoring untuk route binding
+
+## 🚨 Troubleshooting Route Model Binding
+
+### ❌ Binding Issues
+- **Model not found** → Cek route key name dan database field
+- **Wrong model returned** → Verify custom binding logic di RouteServiceProvider
+- **Binding tidak aktif** → Pastikan parameter name match dengan model name
+
+### ❌ Performance Issues
+- **Slow route resolution** → Tambah database index untuk route key field
+- **Too many queries** → Gunakan eager loading dalam custom binding
+- **Memory issues** → Implement route caching untuk frequently accessed models
+
+### ❌ Security Issues
+- **Unpublished content accessible** → Verify published constraint dalam binding
+- **Draft posts visible** → Check status filtering di resolveRouteBinding
+- **Future posts accessible** → Implement published_at constraint
+
 ## 🎯 Kesimpulan
 
 Selamat! Anda telah menguasai:
@@ -762,8 +1157,9 @@ Selamat! Anda telah menguasai:
 - ✅ Advanced controllers dengan model binding
 - ✅ Custom error handling untuk missing models
 - ✅ Performance optimization dalam route binding
+- ✅ **[BARU] Pengujian komprehensif route model binding**
 
-Route Model Binding membuat code Anda lebih clean dan Laravel akan handle semua dependency injection secara otomatis. Di pelajaran selanjutnya, kita akan mengimplementasi authentication dengan Laravel Breeze.
+Route Model Binding membuat code Anda lebih clean dan Laravel akan handle semua dependency injection secara otomatis. Dengan pengujian yang telah dilakukan, Anda memastikan bahwa implementasi route model binding telah optimal dan siap untuk production. Di pelajaran selanjutnya, kita akan mengimplementasi authentication dengan Laravel Breeze.
 
 ---
 

@@ -368,22 +368,408 @@ Penggunaan di view:
 3. **Gunakan parameter constraints** untuk validasi
 4. **Pisahkan logic kompleks** ke Controllers (pelajaran mendatang)
 
+## 🧪 Pengujian & Validasi Routing
+
+Setelah mempelajari konsep routing dan view, mari kita uji pemahaman Anda dengan berbagai test untuk memastikan semua konsep telah dipahami dengan baik.
+
+### 🛣️ Test 1: Verifikasi Routes Registration
+
+**🎯 Tujuan:** Memastikan semua routes yang dibuat sudah terdaftar dengan benar di Laravel.
+
+**Test Case 1.1 - Routes List:**
+```bash
+# Tampilkan semua routes yang terdaftar
+php artisan route:list
+
+# Filter routes tertentu
+php artisan route:list --name=blog
+php artisan route:list --path=blog
+
+# Tampilkan routes dalam format compact
+php artisan route:list --compact
+```
+
+**✅ Expected Results:**
+- Route homepage (`/`) terdaftar
+- Route blog (`/blog`) terdaftar dengan nama `blog.index`
+- Route single post (`/blog/post/{id}`) terdaftar dengan nama `blog.show`
+- Route about dan contact (jika dibuat) terdaftar
+
+**Test Case 1.2 - Route Parameters:**
+```bash
+# Test route dengan parameter menggunakan Tinker
+php artisan tinker
+```
+
+```php
+// Test route generation dengan parameter
+route('blog.show', ['id' => 1]);        // Harus: http://localhost/blog/post/1
+route('blog.show', ['id' => 100]);      // Harus: http://localhost/blog/post/100
+
+// Test URL generation tanpa parameter
+route('blog.index');                    // Harus: http://localhost/blog
+url('/');                              // Harus: http://localhost
+
+// Exit tinker
+exit;
+```
+
+**✅ Expected Results:**
+- Route helper menghasilkan URL yang benar
+- Parameter diteruskan dengan benar ke URL
+- Named routes berfungsi tanpa error
+
+### 🌐 Test 2: Browser Testing Routes
+
+**🎯 Tujuan:** Memastikan semua routes dapat diakses melalui browser dan menampilkan content yang benar.
+
+**Test Case 2.1 - Static Routes:**
+
+Jalankan server development:
+```bash
+php artisan serve
+```
+
+Test di browser:
+
+1. **Homepage:** `http://127.0.0.1:8000/`
+   - ✅ Harus tampil halaman welcome Laravel atau redirect ke blog
+   - ✅ Status code 200 (berhasil)
+   - ✅ Tidak ada error 404 atau 500
+
+2. **Blog Index:** `http://127.0.0.1:8000/blog`
+   - ✅ Harus tampil halaman blog index
+   - ✅ Content sesuai dengan yang ada di `blog/index.blade.php`
+   - ✅ Header dan layout tampil dengan benar
+
+**Test Case 2.2 - Dynamic Routes dengan Parameter:**
+
+Test berbagai parameter:
+
+1. **Post ID 1:** `http://127.0.0.1:8000/blog/post/1`
+   - ✅ Harus tampil halaman detail post
+   - ✅ Parameter ID (1) tampil di halaman
+   - ✅ Link "Kembali ke Blog" berfungsi
+
+2. **Post ID Besar:** `http://127.0.0.1:8000/blog/post/9999`
+   - ✅ Harus tampil halaman dengan ID 9999
+   - ✅ Tidak error meskipun ID tidak ada di database (saat ini masih dummy)
+
+3. **Parameter String:** `http://127.0.0.1:8000/blog/post/abc`
+   - ✅ Harus tetap berfungsi (karena belum ada constraint)
+   - ✅ Parameter "abc" tampil di halaman
+
+**✅ Expected Results:**
+- Semua routes dapat diakses tanpa error
+- Parameter diteruskan dan ditampilkan dengan benar
+- Navigation antar halaman berfungsi
+
+### 🎨 Test 3: Blade Template Testing
+
+**🎯 Tujuan:** Memastikan Blade template bekerja dengan benar dan menerima data dari routes.
+
+**Test Case 3.1 - Template Structure:**
+```bash
+# Cek struktur file view
+ls resources/views/
+ls resources/views/blog/
+
+# Cek isi file view
+cat resources/views/blog/index.blade.php | head -10
+cat resources/views/blog/show.blade.php | head -10
+```
+
+**Test Case 3.2 - Blade Variables:**
+
+Edit sementara route untuk test variabel:
+```php
+// Test di routes/web.php - tambahkan route test
+Route::get('/test-blade', function () {
+    $data = [
+        'title' => 'Test Blade Template',
+        'message' => 'Hello from Laravel!',
+        'items' => ['Item 1', 'Item 2', 'Item 3']
+    ];
+
+    return view('test-blade', $data);
+});
+```
+
+Buat file `resources/views/test-blade.blade.php`:
+```php
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ $title }}</title>
+</head>
+<body>
+    <h1>{{ $title }}</h1>
+    <p>{{ $message }}</p>
+
+    <ul>
+        @foreach($items as $item)
+            <li>{{ $item }}</li>
+        @endforeach
+    </ul>
+
+    @if(count($items) > 2)
+        <p>Banyak item tersedia!</p>
+    @else
+        <p>Item terbatas.</p>
+    @endif
+</body>
+</html>
+```
+
+Test: `http://127.0.0.1:8000/test-blade`
+
+**✅ Expected Results:**
+- Variabel `$title` dan `$message` tampil dengan benar
+- Loop `@foreach` menampilkan semua items
+- Conditional `@if` menampilkan pesan yang benar
+
+### 🔗 Test 4: Named Routes & URL Generation
+
+**🎯 Tujuan:** Memastikan named routes dan URL generation berfungsi dengan benar.
+
+**Test Case 4.1 - Named Routes Helper:**
+```bash
+php artisan tinker
+```
+
+```php
+// Test named routes
+route('blog.index');                    // Harus return URL blog
+route('blog.show', ['id' => 5]);       // Harus return URL dengan parameter
+
+// Test apakah route ada
+Route::has('blog.index');              // Harus return true
+Route::has('blog.show');               // Harus return true
+Route::has('nonexistent');             // Harus return false
+
+// Test current route (jika dipanggil dalam request)
+// app('router')->current(); // Bisa dicoba nanti saat ada request
+```
+
+**Test Case 4.2 - Link Generation dalam View:**
+
+Update file `resources/views/blog/index.blade.php` untuk test link:
+```php
+<!-- Tambahkan di bagian bawah file -->
+<div style="margin-top: 2rem; padding: 1rem; border-top: 1px solid #ccc;">
+    <h3>Test Navigation Links:</h3>
+    <ul>
+        <li><a href="{{ route('blog.index') }}">Blog Home</a></li>
+        <li><a href="{{ route('blog.show', ['id' => 1]) }}">Post 1</a></li>
+        <li><a href="{{ route('blog.show', ['id' => 2]) }}">Post 2</a></li>
+        <li><a href="{{ url('/') }}">Homepage</a></li>
+    </ul>
+</div>
+```
+
+Test: `http://127.0.0.1:8000/blog`
+
+**✅ Expected Results:**
+- Semua link ter-generate dengan URL yang benar
+- Klik link tidak menghasilkan error 404
+- Navigation berfungsi dengan lancar
+
+### 📊 Test 5: Route Parameters & Constraints
+
+**🎯 Tujuan:** Memahami cara kerja route parameters dan menambahkan validasi.
+
+**Test Case 5.1 - Basic Parameters:**
+
+Buat route test dengan multiple parameters:
+```php
+// Tambahkan route test di routes/web.php
+Route::get('/test/category/{category}/post/{id}', function ($category, $id) {
+    return "Category: $category, Post ID: $id";
+})->name('test.category.post');
+```
+
+Test URL:
+- `http://127.0.0.1:8000/test/category/laravel/post/5`
+- `http://127.0.0.1:8000/test/category/php/post/100`
+
+**Test Case 5.2 - Route Constraints:**
+
+Tambahkan constraints untuk validasi parameter:
+```php
+// Route dengan constraint ID harus numerik
+Route::get('/blog/post/{id}', function ($id) {
+    return view('blog.show', ['id' => $id]);
+})->where('id', '[0-9]+')->name('blog.show');
+
+// Route dengan constraint category harus alphabetic
+Route::get('/blog/category/{category}', function ($category) {
+    return "Category: $category";
+})->where('category', '[a-zA-Z]+')->name('blog.category');
+```
+
+Test constraint:
+- ✅ Valid: `http://127.0.0.1:8000/blog/post/123`
+- ❌ Invalid: `http://127.0.0.1:8000/blog/post/abc` (harus 404)
+- ✅ Valid: `http://127.0.0.1:8000/blog/category/laravel`
+- ❌ Invalid: `http://127.0.0.1:8000/blog/category/123` (harus 404)
+
+**✅ Expected Results:**
+- Parameter constraints berfungsi dengan benar
+- Invalid parameter menghasilkan 404 error
+- Valid parameter diterima dan diproses
+
+### 🎯 Test 6: Challenge Implementation
+
+**🎯 Tujuan:** Implementasi tantangan untuk menguji pemahaman komprehensif.
+
+**Challenge Task:** Implementasi 3 route baru dengan requirement spesifik.
+
+**Task 6.1 - About Page:**
+```php
+// 1. Buat route about
+Route::get('/about', function () {
+    $data = [
+        'title' => 'Tentang Kami',
+        'description' => 'Blog Laravel Indonesia untuk pembelajaran web development',
+        'features' => ['Tutorial Laravel', 'Tips & Tricks', 'Best Practices']
+    ];
+    return view('about', $data);
+})->name('about');
+```
+
+Buat view `resources/views/about.blade.php`:
+```php
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ $title }}</title>
+    <style>
+        body { font-family: system-ui; max-width: 800px; margin: 0 auto; padding: 2rem; }
+        .feature { background: #f0f0f0; padding: 1rem; margin: 0.5rem 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>{{ $title }}</h1>
+    <p>{{ $description }}</p>
+
+    <h3>Fitur Utama:</h3>
+    @foreach($features as $feature)
+        <div class="feature">{{ $feature }}</div>
+    @endforeach
+
+    <p><a href="{{ route('blog.index') }}">← Kembali ke Blog</a></p>
+</body>
+</html>
+```
+
+**Task 6.2 - Contact Page:**
+```php
+// 2. Buat route contact dengan multiple parameter optional
+Route::get('/contact/{type?}', function ($type = 'general') {
+    $contacts = [
+        'general' => 'info@laravelblog.com',
+        'support' => 'support@laravelblog.com',
+        'business' => 'business@laravelblog.com'
+    ];
+
+    return view('contact', [
+        'type' => $type,
+        'email' => $contacts[$type] ?? $contacts['general'],
+        'allTypes' => $contacts
+    ]);
+})->name('contact');
+```
+
+**Task 6.3 - Complex Route:**
+```php
+// 3. Buat route dengan multiple parameter dan constraint
+Route::get('/blog/category/{category}/post/{id}/comment/{comment?}', function ($category, $id, $comment = null) {
+    return view('blog.detail', compact('category', 'id', 'comment'));
+})->where(['id' => '[0-9]+', 'comment' => '[0-9]+'])->name('blog.detail');
+```
+
+**✅ Success Criteria:**
+- Route about dapat diakses dan tampilkan data dengan benar
+- Route contact dengan parameter optional berfungsi
+- Route complex dengan multiple parameter dan constraint bekerja
+- Semua view ter-render tanpa error
+- Navigation antar halaman lancar
+
+## 📋 Checklist Kelulusan Routing
+
+Tandai ✅ untuk setiap test yang berhasil:
+
+### 🛣️ Route Registration
+- [ ] `php artisan route:list` menampilkan semua routes
+- [ ] Named routes terdaftar dengan benar
+- [ ] Route dengan parameter terdaftar
+- [ ] Route helpers (route(), url()) berfungsi
+
+### 🌐 Browser Access
+- [ ] Homepage dapat diakses tanpa error
+- [ ] Blog index page tampil dengan benar
+- [ ] Single post page menerima parameter dengan benar
+- [ ] Navigation links berfungsi antar halaman
+
+### 🎨 Blade Templates
+- [ ] View files terbaca tanpa error
+- [ ] Blade syntax ({{ }}, @foreach, @if) berfungsi
+- [ ] Data dari route diterima di view dengan benar
+- [ ] Template rendering berjalan lancar
+
+### 🔗 Named Routes & URLs
+- [ ] Named routes dapat dipanggil dengan route() helper
+- [ ] URL generation dengan parameter benar
+- [ ] Link generation di view berfungsi
+- [ ] Current route detection (bonus)
+
+### 📊 Parameters & Constraints
+- [ ] Route parameters diterima dengan benar
+- [ ] Multiple parameters berfungsi
+- [ ] Route constraints memvalidasi parameter
+- [ ] Invalid parameters menghasilkan 404
+
+### 🎯 Challenge Implementation
+- [ ] About page berhasil dibuat dan berfungsi
+- [ ] Contact page dengan optional parameter
+- [ ] Complex route dengan multiple parameter
+- [ ] Semua views ter-render dengan data yang benar
+
+## 🚨 Troubleshooting Routes
+
+### ❌ Route Issues
+- **404 Not Found** → Cek penulisan URL dan route definition
+- **Route not defined** → Pastikan route ada di `routes/web.php`
+- **Parameter not received** → Cek nama parameter di route dan function
+
+### ❌ View Issues
+- **View not found** → Cek path file view dan penulisan nama
+- **Variable undefined** → Pastikan data dikirim dari route ke view
+- **Blade syntax error** → Cek penulisan {{ }} dan @directive
+
+### ❌ Named Routes Issues
+- **Route does not exist** → Cek nama route dengan `route:list`
+- **Missing parameters** → Sertakan parameter saat panggil named route
+- **URL generation error** → Pastikan parameter sesuai dengan route definition
+
 ## 🎯 Kesimpulan
 
 Selamat! Anda telah berhasil:
 - ✅ Memahami dasar routing Laravel
-- ✅ Membuat route dengan dan tanpa parameter  
+- ✅ Membuat route dengan dan tanpa parameter
 - ✅ Membuat view Blade template sederhana
 - ✅ Mengerti request-response cycle
+- ✅ **[BARU] Melakukan pengujian komprehensif routing dan view**
 
-Di pelajaran selanjutnya, kita akan mempercantik tampilan blog menggunakan Tailwind CSS.
+Dengan pengujian yang telah dilakukan, Anda memastikan bahwa konsep routing, parameter handling, dan Blade templating telah dipahami dengan baik. Di pelajaran selanjutnya, kita akan mempercantik tampilan blog menggunakan Tailwind CSS.
 
 ## 💡 Tantangan
 
 Coba buat route dan view untuk:
-1. Halaman About (`/about`)
-2. Halaman Contact (`/contact`) 
-3. Route dengan multiple parameter: `/blog/category/{category}/post/{id}`
+1. Halaman About (`/about`) ✅ Sudah dibuat dalam test
+2. Halaman Contact (`/contact`) ✅ Sudah dibuat dalam test
+3. Route dengan multiple parameter: `/blog/category/{category}/post/{id}` ✅ Sudah dibuat dalam test
 
 ---
 
