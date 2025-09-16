@@ -1568,6 +1568,314 @@ App\Models\Category::withCount('publishedPosts')->get();
 ```
 
 
+## 🧪 Pengujian & Validasi Pembelajaran
+
+Setelah menyelesaikan materi, mari kita uji pemahaman Anda dengan berbagai metode pengujian untuk memastikan semua konsep telah dipahami dengan baik.
+
+### 🔍 Test 1: Verifikasi Model Relationships
+
+**🎯 Tujuan:** Memastikan semua relationship antar model bekerja dengan benar.
+
+Buka Laravel Tinker dan jalankan test berikut:
+
+```bash
+# Buka Tinker untuk testing interaktif
+php artisan tinker
+```
+
+**Test Case 1.1 - Post Relationships:**
+```php
+// Ambil artikel pertama
+$post = App\Models\Post::first();
+
+// Test: Artikel punya penulis (author/user)
+echo "Penulis: " . $post->author->name;
+
+// Test: Artikel punya kategori
+echo "Kategori: " . $post->category->name;
+
+// Test: Artikel punya banyak tag
+echo "Jumlah tag: " . $post->tags->count();
+echo "Tag pertama: " . $post->tags->first()->name;
+```
+
+**Test Case 1.2 - Category Relationships:**
+```php
+// Ambil kategori pertama
+$category = App\Models\Category::first();
+
+// Test: Kategori punya banyak artikel
+echo "Jumlah artikel: " . $category->posts->count();
+
+// Test: Hitung artikel yang published saja
+echo "Artikel published: " . $category->publishedPosts->count();
+```
+
+**Test Case 1.3 - Tag Relationships:**
+```php
+// Ambil tag pertama
+$tag = App\Models\Tag::first();
+
+// Test: Tag ada di banyak artikel
+echo "Artikel dengan tag ini: " . $tag->posts->count();
+```
+
+**✅ Expected Results:**
+- Semua perintah di atas harus berhasil tanpa error
+- Data yang ditampilkan harus sesuai dengan yang ada di database
+
+### 🎮 Test 2: Model Scopes & Methods
+
+**🎯 Tujuan:** Memastikan custom scopes dan methods di model bekerja dengan benar.
+
+**Test Case 2.1 - Post Scopes:**
+```php
+// Test scope published
+$publishedPosts = App\Models\Post::published()->count();
+echo "Artikel published: " . $publishedPosts;
+
+// Test scope featured
+$featuredPost = App\Models\Post::featured()->first();
+echo "Artikel unggulan: " . $featuredPost->title;
+
+// Test scope recent dengan limit
+$recentPosts = App\Models\Post::recent(3)->get();
+echo "3 Artikel terbaru: " . $recentPosts->count();
+
+// Test scope popular
+$popularPost = App\Models\Post::popular(1)->first();
+echo "Artikel terpopuler: " . $popularPost->title . " (" . $popularPost->views_count . " views)";
+```
+
+**Test Case 2.2 - Category Scopes:**
+```php
+// Test scope active
+$activeCategories = App\Models\Category::active()->count();
+echo "Kategori aktif: " . $activeCategories;
+
+// Test scope ordered
+$orderedCategories = App\Models\Category::ordered()->get();
+echo "Kategori pertama (setelah sorting): " . $orderedCategories->first()->name;
+```
+
+**Test Case 2.3 - Custom Attributes:**
+```php
+// Test custom attributes di Post
+$post = App\Models\Post::first();
+echo "Tanggal publish: " . $post->published_date;
+echo "Waktu baca: " . $post->reading_time;
+
+// Test custom attributes di Category
+$category = App\Models\Category::first();
+echo "Jumlah post: " . $category->posts_count;
+```
+
+**✅ Expected Results:**
+- Semua scope harus return data yang benar
+- Custom attributes harus menampilkan format yang tepat
+
+### 🌐 Test 3: Controller & Routes
+
+**🎯 Tujuan:** Memastikan Controller dan Routes bekerja dengan benar.
+
+**Test Case 3.1 - Route Testing:**
+```bash
+# Test apakah semua routes terdaftar
+php artisan route:list --name=blog
+```
+
+**Expected Output:**
+```
+GET|HEAD  blog                     blog.index    App\Http\Controllers\BlogController@index
+GET|HEAD  blog/category/{category} blog.category App\Http\Controllers\BlogController@category
+GET|HEAD  blog/post/{post}         blog.show     App\Http\Controllers\BlogController@show
+GET|HEAD  blog/tag/{tag}           blog.tag      App\Http\Controllers\BlogController@tag
+```
+
+**Test Case 3.2 - Browser Testing:**
+
+Buka browser dan test URL berikut:
+
+1. **Homepage Blog:** `http://127.0.0.1:8000/blog`
+   - ✅ Harus tampil artikel featured
+   - ✅ Harus tampil daftar artikel recent
+   - ✅ Sidebar harus tampil categories & tags
+
+2. **Single Post:** `http://127.0.0.1:8000/blog/post/[slug-artikel]`
+   - ✅ Harus tampil detail artikel
+   - ✅ Counter views harus bertambah saat refresh
+   - ✅ Harus tampil related posts
+
+3. **Category Page:** `http://127.0.0.1:8000/blog/category/[slug-kategori]`
+   - ✅ Harus tampil artikel dalam kategori tersebut
+   - ✅ Pagination harus bekerja jika artikel banyak
+
+4. **Tag Page:** `http://127.0.0.1:8000/blog/tag/[slug-tag]`
+   - ✅ Harus tampil artikel dengan tag tersebut
+   - ✅ Harus tampil kategori yang berkaitan dengan tag
+
+### 📊 Test 4: Database Queries & Performance
+
+**🎯 Tujuan:** Memastikan query database efisien dan tidak ada N+1 problem.
+
+**Test Case 4.1 - Query Efficiency:**
+```php
+// Test dengan eager loading
+DB::enableQueryLog();
+
+// Query yang efisien (dengan eager loading)
+$posts = App\Models\Post::with(['category', 'author', 'tags'])->get();
+
+$queries = DB::getQueryLog();
+echo "Jumlah query dengan eager loading: " . count($queries);
+
+// Reset log
+DB::flushQueryLog();
+
+// Query yang tidak efisien (tanpa eager loading)
+$posts = App\Models\Post::all();
+foreach($posts as $post) {
+    echo $post->category->name; // Ini akan trigger N+1 queries
+}
+
+$queries = DB::getQueryLog();
+echo "Jumlah query tanpa eager loading: " . count($queries);
+```
+
+**✅ Expected Results:**
+- Query dengan eager loading: 1-3 queries
+- Query tanpa eager loading: 1 + N queries (N = jumlah posts)
+
+**Test Case 4.2 - withCount Testing:**
+```php
+// Test withCount untuk menghitung related models
+$categories = App\Models\Category::withCount('publishedPosts')->get();
+
+foreach($categories as $category) {
+    echo $category->name . ": " . $category->published_posts_count . " posts";
+}
+```
+
+### 🔧 Test 5: Data Integrity & Validation
+
+**🎯 Tujuan:** Memastikan data integrity dan validation bekerja dengan benar.
+
+**Test Case 5.1 - Slug Generation:**
+```php
+// Test auto-generate slug untuk Category
+$category = new App\Models\Category();
+$category->name = "Laravel Advanced Tips";
+$category->save();
+
+echo "Slug yang di-generate: " . $category->slug; // Harus: laravel-advanced-tips
+
+// Test auto-generate slug untuk Post
+$post = new App\Models\Post();
+$post->title = "Tutorial Laravel untuk Pemula";
+$post->content = "Content test...";
+$post->user_id = 1;
+$post->category_id = 1;
+$post->save();
+
+echo "Slug yang di-generate: " . $post->slug; // Harus: tutorial-laravel-untuk-pemula
+```
+
+**Test Case 5.2 - Mass Assignment Protection:**
+```php
+// Test fillable protection
+try {
+    App\Models\Post::create([
+        'title' => 'Test Post',
+        'content' => 'Test content',
+        'id' => 999, // Field ini tidak ada di fillable, harus diabaikan
+        'user_id' => 1,
+        'category_id' => 1,
+    ]);
+    echo "Mass assignment protection bekerja dengan benar";
+} catch (Exception $e) {
+    echo "Error: " . $e->getMessage();
+}
+```
+
+### 🎯 Test 6: Mini Project Challenge
+
+**🏆 Challenge:** Buat fitur baru menggunakan konsep MVC yang sudah dipelajari.
+
+**Task:** Tambahkan fitur "Post Search" dengan requirement:
+
+1. **Model Scope:** Tambah scope `search($keyword)` di Post model
+2. **Controller Method:** Tambah method `search()` di BlogController
+3. **Route:** Tambah route untuk search
+4. **View:** Buat halaman search results
+
+**Implementation Guide:**
+
+```php
+// 1. Tambah di Post Model (app/Models/Post.php)
+public function scopeSearch($query, $keyword)
+{
+    return $query->where('title', 'like', "%{$keyword}%")
+                 ->orWhere('content', 'like', "%{$keyword}%")
+                 ->orWhere('excerpt', 'like', "%{$keyword}%");
+}
+
+// 2. Tambah di BlogController (app/Http/Controllers/BlogController.php)
+public function search(Request $request)
+{
+    $keyword = $request->get('q');
+
+    $posts = Post::published()
+                 ->search($keyword)
+                 ->with(['category', 'author'])
+                 ->paginate(10);
+
+    return view('blog.search', compact('posts', 'keyword'));
+}
+
+// 3. Tambah route di routes/web.php
+Route::get('/blog/search', [BlogController::class, 'search'])->name('blog.search');
+```
+
+**✅ Success Criteria:**
+- Search form berfungsi
+- Results ditampilkan dengan pagination
+- Highlight keyword di results (bonus)
+
+## 📋 Checklist Kelulusan
+
+Tandai ✅ untuk setiap test yang berhasil:
+
+### Model & Database
+- [ ] Model relationships berfungsi (Post, Category, Tag, User)
+- [ ] Model scopes bekerja (published, featured, recent, popular)
+- [ ] Custom attributes tampil dengan benar (reading_time, published_date)
+- [ ] Auto-generate slug berfungsi
+- [ ] Mass assignment protection aktif
+
+### Controller & Routes
+- [ ] Semua routes terdaftar dengan benar
+- [ ] BlogController methods berfungsi (index, show, category, tag)
+- [ ] Data passing dari Controller ke View berhasil
+- [ ] Error handling untuk data tidak ditemukan
+
+### Views & UI
+- [ ] Homepage blog tampil dengan data real
+- [ ] Single post page tampil dengan benar
+- [ ] Category page tampil artikel per kategori
+- [ ] Tag page tampil artikel per tag
+- [ ] Sidebar menampilkan data dinamis
+
+### Performance & Best Practices
+- [ ] Eager loading diterapkan (tidak ada N+1 queries)
+- [ ] withCount() digunakan untuk counting
+- [ ] Query logging menunjukkan efisiensi
+- [ ] Pagination berfungsi pada list pages
+
+### Bonus Challenge
+- [ ] Search functionality berhasil diimplementasi
+- [ ] Search results dengan pagination
+- [ ] Search form terintegrasi di navigation
+
 ## 🎯 Kesimpulan
 
 Selamat! Anda telah berhasil:
@@ -1577,8 +1885,9 @@ Selamat! Anda telah berhasil:
 - ✅ Mengganti data dummy dengan data real dari database
 - ✅ Menambahkan scopes dan accessor/mutator
 - ✅ Membuat seeders untuk sample data
+- ✅ **[BARU] Melakukan pengujian komprehensif untuk validasi pembelajaran**
 
-Aplikasi blog sekarang sudah menggunakan data real dari database dengan struktur MVC yang proper. Di pelajaran selanjutnya, kita akan belajar tentang Eloquent relationships dan GET parameters.
+Aplikasi blog sekarang sudah menggunakan data real dari database dengan struktur MVC yang proper. Dengan pengujian yang telah dilakukan, Anda memastikan bahwa semua konsep MVC dan Eloquent telah dipahami dan diimplementasi dengan benar.
 
 ---
 
