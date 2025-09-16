@@ -22,7 +22,7 @@ Route Model Binding adalah fitur Laravel yang secara otomatis mengkonversi param
 
 ### Step 1: Setup Custom Route Model Binding
 
-Edit file `app/Providers/RouteServiceProvider.php`:
+Edit file `app/Providers/RouteServiceProvider.php`. **Tambahkan** custom bindings setelah RateLimiter configuration:
 
 ```php
 <?php
@@ -54,27 +54,22 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Rate limiting untuk API
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
-        // Custom Route Model Binding untuk Post
-        // Ini akan handle URL seperti: /blog/post/slug-artikel
+        // ... existing bindings ...
+
         Route::bind('post', function (string $value, Request $request) {
-            // Mulai query dengan slug
             $query = Post::where('slug', $value);
 
-            // Kalau bukan halaman admin, terapkan filter publish
             if (!$request->is('admin/*')) {
-                $query->where('status', 'published')       // Hanya artikel yang dipublikasi
-                      ->where('published_at', '<=', now()); // Tanggal publish sudah lewat
+                $query->where('status', 'published')
+                      ->where('published_at', '<=', now());
             }
 
-            // Load relationships sekaligus (eager loading)
             $post = $query->with(['category', 'author', 'tags'])->first();
 
-            // Kalau tidak ketemu, lempar 404 dengan pesan custom
             if (!$post) {
                 abort(404, 'Post tidak ditemukan atau belum dipublikasi');
             }
@@ -82,12 +77,9 @@ class RouteServiceProvider extends ServiceProvider
             return $post;
         });
 
-        // Custom Route Model Binding untuk Category
-        // Handle URL seperti: /blog/category/laravel-framework
         Route::bind('category', function (string $value, Request $request) {
             $query = Category::where('slug', $value);
 
-            // Di halaman publik, hanya kategori aktif
             if (!$request->is('admin/*')) {
                 $query->where('is_active', true);
             }
@@ -101,8 +93,6 @@ class RouteServiceProvider extends ServiceProvider
             return $category;
         });
 
-        // Custom Route Model Binding untuk Tag
-        // Handle URL seperti: /blog/tag/laravel
         Route::bind('tag', function (string $value, Request $request) {
             $tag = Tag::where('slug', $value)->first();
 
@@ -113,7 +103,6 @@ class RouteServiceProvider extends ServiceProvider
             return $tag;
         });
 
-        // Load route files
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')
@@ -125,6 +114,8 @@ class RouteServiceProvider extends ServiceProvider
     }
 }
 ```
+
+**Catatan**: Komentar `// ... existing bindings ...` menandakan bahwa mungkin ada binding lain yang sudah ada. Anda tinggal menambahkan 3 binding baru (post, category, tag) setelah RateLimiter configuration.
 
 ### Step 2: Perbandingan Sebelum vs Sesudah
 
