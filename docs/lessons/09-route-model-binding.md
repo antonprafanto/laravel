@@ -227,6 +227,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB; 
 
 class CategoryController extends Controller
 {
@@ -285,8 +286,8 @@ class CategoryController extends Controller
                                    ->get();
 
         // Get popular tags dalam category ini
-        $categoryTags = \DB::table('tags')
-                          ->select('tags.*', \DB::raw('COUNT(post_tag.post_id) as posts_count'))
+        $categoryTags = DB::table('tags')
+                          ->select('tags.*', DB::raw('COUNT(post_tag.post_id) as posts_count'))
                           ->join('post_tag', 'tags.id', '=', 'post_tag.tag_id')
                           ->join('posts', 'post_tag.post_id', '=', 'posts.id')
                           ->where('posts.category_id', $category->id)
