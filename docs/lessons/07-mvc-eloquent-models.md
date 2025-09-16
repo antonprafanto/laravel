@@ -882,9 +882,331 @@ Edit `resources/views/components/layout/sidebar.blade.php`:
 </aside>
 ```
 
+### Step 9: Membuat View untuk Category dan Tag
+
+Tutorial sebelumnya sudah membuat controller methods untuk category dan tag, sekarang kita perlu membuat view templates-nya.
+
+#### Membuat View Category
+
+Buat file `resources/views/blog/category.blade.php`:
+
+```php
+@extends('layouts.app')
+
+@section('title', $category->name . ' - Blog Laravel')
+
+@section('content')
+@php $showSidebar = true; @endphp
+
+<div class="space-y-8">
+    <!-- Category Header -->
+    <div class="bg-gradient-to-r from-{{ $category->color }}-500 to-{{ $category->color }}-600 rounded-2xl text-white p-8">
+        <div class="max-w-4xl">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                    <div class="text-2xl">📁</div>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold">{{ $category->name }}</h1>
+                    <p class="text-{{ $category->color }}-100">
+                        {{ $posts->total() }} artikel dalam kategori ini
+                    </p>
+                </div>
+            </div>
+
+            @if($category->description)
+            <p class="text-lg text-{{ $category->color }}-100 leading-relaxed">
+                {{ $category->description }}
+            </p>
+            @endif
+        </div>
+    </div>
+
+    <!-- Posts Grid -->
+    @if($posts->count() > 0)
+    <div>
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">
+                Artikel {{ $category->name }}
+            </h2>
+            <div class="text-sm text-gray-500">
+                Halaman {{ $posts->currentPage() }} dari {{ $posts->lastPage() }}
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach($posts as $post)
+            <article class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                <!-- Featured Image atau Placeholder -->
+                <div class="aspect-video bg-gradient-to-br from-{{ $category->color }}-500 to-{{ $category->color }}-600 relative">
+                    @if($post->featured_image)
+                        <img src="{{ asset('storage/' . $post->featured_image) }}"
+                             alt="{{ $post->title }}"
+                             class="w-full h-full object-cover">
+                    @else
+                        <div class="absolute inset-0 flex items-center justify-center text-white">
+                            <div class="text-center">
+                                <div class="text-4xl mb-2">📖</div>
+                                <div class="text-sm font-medium">{{ strtoupper($category->name) }}</div>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($post->is_featured)
+                    <div class="absolute top-3 left-3">
+                        <span class="bg-yellow-500 text-yellow-900 text-xs font-medium px-2 py-1 rounded-full">
+                            ⭐ Unggulan
+                        </span>
+                    </div>
+                    @endif
+                </div>
+
+                <!-- Post Content -->
+                <div class="p-6">
+                    <div class="flex items-center justify-between text-sm text-gray-500 mb-3">
+                        <span>{{ $post->published_date }}</span>
+                        <span>{{ $post->reading_time }}</span>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-gray-900 mb-3 leading-tight">
+                        <a href="{{ route('blog.show', $post) }}" class="hover:text-{{ $category->color }}-600 transition-colors">
+                            {{ $post->title }}
+                        </a>
+                    </h3>
+
+                    <p class="text-gray-600 mb-4 leading-relaxed">
+                        {{ $post->excerpt }}
+                    </p>
+
+                    <!-- Post Meta -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3 text-sm text-gray-500">
+                            <span>{{ $post->author->name }}</span>
+                            <span>•</span>
+                            <span>{{ $post->views_count }} views</span>
+                        </div>
+
+                        <!-- Post Tags -->
+                        @if($post->tags->count() > 0)
+                        <div class="flex space-x-1">
+                            @foreach($post->tags->take(2) as $tag)
+                            <a href="{{ route('blog.tag', $tag) }}"
+                               class="text-xs bg-gray-100 hover:bg-{{ $category->color }}-100 text-gray-600 hover:text-{{ $category->color }}-700 px-2 py-1 rounded transition-colors">
+                                {{ $tag->name }}
+                            </a>
+                            @endforeach
+                            @if($post->tags->count() > 2)
+                            <span class="text-xs text-gray-400">+{{ $post->tags->count() - 2 }}</span>
+                            @endif
+                        </div>
+                        @endif
+                    </div>
+                </div>
+            </article>
+            @endforeach
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-12">
+            {{ $posts->links() }}
+        </div>
+    </div>
+    @else
+    <!-- Empty State -->
+    <div class="text-center py-16">
+        <div class="max-w-md mx-auto">
+            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <div class="text-3xl text-gray-400">📝</div>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">
+                Belum Ada Artikel
+            </h3>
+            <p class="text-gray-600 mb-6">
+                Kategori <strong>{{ $category->name }}</strong> belum memiliki artikel yang dipublikasikan.
+            </p>
+            <a href="{{ route('blog.index') }}"
+               class="inline-flex items-center bg-{{ $category->color }}-600 hover:bg-{{ $category->color }}-700 text-white font-medium px-6 py-3 rounded-lg transition-colors">
+                Lihat Semua Artikel
+                <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+    @endif
+</div>
+@endsection
+```
+
+#### Membuat View Tag
+
+Buat file `resources/views/blog/tag.blade.php`:
+
+```php
+@extends('layouts.app')
+
+@section('title', 'Tag: ' . $tag->name . ' - Blog Laravel')
+
+@section('content')
+@php $showSidebar = true; @endphp
+
+<div class="space-y-8">
+    <!-- Tag Header -->
+    <div class="bg-gradient-to-r from-gray-600 to-gray-700 rounded-2xl text-white p-8">
+        <div class="max-w-4xl">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                    <div class="text-2xl">#</div>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold">{{ $tag->name }}</h1>
+                    <p class="text-gray-200">
+                        {{ $posts->total() }} artikel dengan tag ini
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Categories untuk Tag -->
+    @php
+        $tagCategories = \App\Models\Category::whereHas('posts', function($query) use ($tag) {
+            $query->whereHas('tags', function($q) use ($tag) {
+                $q->where('tags.id', $tag->id);
+            })->where('status', 'published');
+        })->withCount(['publishedPosts' => function($query) use ($tag) {
+            $query->whereHas('tags', function($q) use ($tag) {
+                $q->where('tags.id', $tag->id);
+            });
+        }])->orderBy('published_posts_count', 'desc')->get();
+    @endphp
+
+    @if($tagCategories->count() > 0)
+    <div class="bg-white rounded-xl shadow-sm p-6">
+        <h3 class="font-semibold text-gray-900 mb-4">Kategori dengan Tag "{{ $tag->name }}"</h3>
+        <div class="flex flex-wrap gap-2">
+            @foreach($tagCategories as $category)
+            <a href="{{ route('blog.category', $category) }}"
+               class="bg-{{ $category->color }}-100 hover:bg-{{ $category->color }}-200 text-{{ $category->color }}-700 hover:text-{{ $category->color }}-800 px-3 py-1 rounded-full text-sm transition-colors">
+                {{ $category->name }}
+                <span class="text-xs opacity-75">({{ $category->published_posts_count }})</span>
+            </a>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    <!-- Posts Grid -->
+    @if($posts->count() > 0)
+    <div>
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">
+                Artikel dengan Tag "{{ $tag->name }}"
+            </h2>
+            <div class="text-sm text-gray-500">
+                Halaman {{ $posts->currentPage() }} dari {{ $posts->lastPage() }}
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach($posts as $post)
+            <article class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                <!-- Featured Image atau Placeholder -->
+                <div class="aspect-video bg-gradient-to-br from-{{ $post->category->color }}-500 to-{{ $post->category->color }}-600 relative">
+                    @if($post->featured_image)
+                        <img src="{{ asset('storage/' . $post->featured_image) }}"
+                             alt="{{ $post->title }}"
+                             class="w-full h-full object-cover">
+                    @else
+                        <div class="absolute inset-0 flex items-center justify-center text-white">
+                            <div class="text-center">
+                                <div class="text-4xl mb-2">📖</div>
+                                <div class="text-sm font-medium">{{ strtoupper($post->category->name) }}</div>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($post->is_featured)
+                    <div class="absolute top-3 left-3">
+                        <span class="bg-yellow-500 text-yellow-900 text-xs font-medium px-2 py-1 rounded-full">
+                            ⭐ Unggulan
+                        </span>
+                    </div>
+                    @endif
+                </div>
+
+                <!-- Post Content -->
+                <div class="p-6">
+                    <div class="flex items-center justify-between text-sm text-gray-500 mb-3">
+                        <a href="{{ route('blog.category', $post->category) }}"
+                           class="bg-{{ $post->category->color }}-100 text-{{ $post->category->color }}-700 px-3 py-1 rounded-full font-medium hover:bg-{{ $post->category->color }}-200 transition-colors">
+                            {{ $post->category->name }}
+                        </a>
+                        <span>{{ $post->published_date }}</span>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-gray-900 mb-3 leading-tight">
+                        <a href="{{ route('blog.show', $post) }}" class="hover:text-gray-600 transition-colors">
+                            {{ $post->title }}
+                        </a>
+                    </h3>
+
+                    <p class="text-gray-600 mb-4 leading-relaxed">
+                        {{ $post->excerpt }}
+                    </p>
+
+                    <!-- Post Meta -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3 text-sm text-gray-500">
+                            <span>{{ $post->author->name }}</span>
+                            <span>•</span>
+                            <span>{{ $post->reading_time }}</span>
+                        </div>
+
+                        <div class="text-sm text-gray-500">
+                            {{ $post->views_count }} views
+                        </div>
+                    </div>
+                </div>
+            </article>
+            @endforeach
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-12">
+            {{ $posts->links() }}
+        </div>
+    </div>
+    @else
+    <!-- Empty State -->
+    <div class="text-center py-16">
+        <div class="max-w-md mx-auto">
+            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <div class="text-3xl text-gray-400">#</div>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">
+                Belum Ada Artikel
+            </h3>
+            <p class="text-gray-600 mb-6">
+                Tag <strong>"{{ $tag->name }}"</strong> belum memiliki artikel yang dipublikasikan.
+            </p>
+            <a href="{{ route('blog.index') }}"
+               class="inline-flex items-center bg-gray-600 hover:bg-gray-700 text-white font-medium px-6 py-3 rounded-lg transition-colors">
+                Lihat Semua Artikel
+                <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+    @endif
+</div>
+@endsection
+```
+
 ## 💾 Membuat Sample Data
 
-### Step 9: Update Seeders dengan Data Real
+### Step 10: Update Seeders dengan Data Real
 
 Edit `database/seeders/PostSeeder.php`:
 
@@ -1055,7 +1377,7 @@ class DatabaseSeeder extends Seeder
 
 ## 🚀 Testing dengan Data Real
 
-### Step 10: Run Seeders dan Test
+### Step 11: Run Seeders dan Test
 
 ```bash
 # Fresh install dengan data
@@ -1156,9 +1478,15 @@ php artisan serve
 npm run dev
 ```
 
-Kunjungi:
+Kunjungi dan test semua URL:
 - `http://127.0.0.1:8000/blog` - Homepage dengan data real
 - `http://127.0.0.1:8000/blog/post/memulai-perjalanan-dengan-laravel-12` - Single post
+- `http://127.0.0.1:8000/blog/category/laravel-framework` - Category page
+- `http://127.0.0.1:8000/blog/category/php-programming` - Category page
+- `http://127.0.0.1:8000/blog/tag/laravel` - Tag page
+- `http://127.0.0.1:8000/blog/tag/tutorial` - Tag page
+
+Semua halaman sekarang seharusnya berfungsi tanpa error "View not found"!
 
 ## ✅ Verifikasi MVC Implementation
 
