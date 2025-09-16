@@ -10,6 +10,263 @@ Setelah menyelesaikan pelajaran ini, Anda akan:
 - ✅ Membuat search functionality
 - ✅ Menambahkan pagination dengan parameters
 - ✅ Optimasi query dengan relationship constraints
+- ✅ Mengimplementasi Custom Route Model Binding
+
+## 🛣️ Custom Route Model Binding
+
+Sebelum masuk ke relationships yang lebih dalam, mari kita setup Route Model Binding yang profesional untuk aplikasi blog kita. Ini akan membuat URL lebih SEO-friendly dan menambahkan kontrol akses yang proper.
+
+### Apa itu Route Model Binding?
+
+Route Model Binding adalah fitur Laravel yang secara otomatis mengkonversi parameter URL menjadi model instances. Alih-alih menerima ID dan melakukan query manual di controller, Laravel akan otomatis melakukan query dan inject model ke controller method.
+
+### Step 1: Setup Custom Route Model Binding
+
+Edit file `app/Providers/RouteServiceProvider.php`:
+
+```php
+<?php
+
+namespace App\Providers;
+
+use App\Models\Post;
+use App\Models\Category;
+use App\Models\Tag;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
+
+class RouteServiceProvider extends ServiceProvider
+{
+    /**
+     * The path to your application's "home" route.
+     *
+     * Typically, users are redirected here after authentication.
+     *
+     * @var string
+     */
+    public const HOME = '/home';
+
+    /**
+     * Define your route model bindings, pattern filters, and other route configuration.
+     */
+    public function boot(): void
+    {
+        // Rate limiting untuk API
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // Custom Route Model Binding untuk Post
+        // Ini akan handle URL seperti: /blog/post/slug-artikel
+        Route::bind('post', function (string $value, Request $request) {
+            // Mulai query dengan slug
+            $query = Post::where('slug', $value);
+
+            // Kalau bukan halaman admin, terapkan filter publish
+            if (!$request->is('admin/*')) {
+                $query->where('status', 'published')       // Hanya artikel yang dipublikasi
+                      ->where('published_at', '<=', now()); // Tanggal publish sudah lewat
+            }
+
+            // Load relationships sekaligus (eager loading)
+            $post = $query->with(['category', 'author', 'tags'])->first();
+
+            // Kalau tidak ketemu, lempar 404 dengan pesan custom
+            if (!$post) {
+                abort(404, 'Post tidak ditemukan atau belum dipublikasi');
+            }
+
+            return $post;
+        });
+
+        // Custom Route Model Binding untuk Category
+        // Handle URL seperti: /blog/category/laravel-framework
+        Route::bind('category', function (string $value, Request $request) {
+            $query = Category::where('slug', $value);
+
+            // Di halaman publik, hanya kategori aktif
+            if (!$request->is('admin/*')) {
+                $query->where('is_active', true);
+            }
+
+            $category = $query->first();
+
+            if (!$category) {
+                abort(404, 'Kategori tidak ditemukan');
+            }
+
+            return $category;
+        });
+
+        // Custom Route Model Binding untuk Tag
+        // Handle URL seperti: /blog/tag/laravel
+        Route::bind('tag', function (string $value, Request $request) {
+            $tag = Tag::where('slug', $value)->first();
+
+            if (!$tag) {
+                abort(404, 'Tag tidak ditemukan');
+            }
+
+            return $tag;
+        });
+
+        // Load route files
+        $this->routes(function () {
+            Route::middleware('api')
+                ->prefix('api')
+                ->group(base_path('routes/api.php'));
+
+            Route::middleware('web')
+                ->group(base_path('routes/web.php'));
+        });
+    }
+}
+```
+
+### Step 2: Perbandingan Sebelum vs Sesudah
+
+#### Sebelum (Default Laravel):
+
+```php
+// routes/web.php
+Route::get('/blog/post/{post}', [BlogController::class, 'show']);
+
+// URL: /blog/post/123 (menggunakan ID)
+// Controller menerima: Post model dengan ID 123
+// Laravel query: Post::findOrFail(123)
+// Masalah:
+// - URL tidak SEO friendly
+// - Bisa akses draft post
+// - Error 404 generic
+```
+
+#### Sesudah (Custom Binding):
+
+```php
+// routes/web.php
+Route::get('/blog/post/{post:slug}', [BlogController::class, 'show']);
+
+// URL: /blog/post/laravel-eloquent-tips (menggunakan slug)
+// Controller menerima: Post model lengkap dengan relationships
+// Custom query: Post::where('slug', 'laravel-eloquent-tips')
+//                   ->where('status', 'published')
+//                   ->where('published_at', '<=', now())
+//                   ->with(['category', 'author', 'tags'])
+//                   ->first()
+// Keuntungan:
+// ✅ URL SEO friendly
+// ✅ Auto filter published posts
+// ✅ Eager loading relationships
+// ✅ Custom error messages
+```
+
+### Step 3: Keuntungan Implementasi
+
+#### 1. SEO-Friendly URLs:
+```
+❌ /blog/post/123
+✅ /blog/post/memulai-perjalanan-dengan-laravel-12
+```
+
+#### 2. Security & Privacy:
+```php
+// User biasa tidak bisa akses draft
+// URL: /blog/post/my-draft-post → 404 dengan pesan custom
+
+// Admin tetap bisa akses semua
+// URL: /admin/posts/my-draft-post → berhasil diakses
+```
+
+#### 3. Performance:
+```php
+// Eager loading otomatis di binding
+$post = // sudah include category, author, tags
+// Tidak perlu query N+1 di controller
+```
+
+#### 4. Better User Experience:
+```
+❌ "404 Not Found"
+✅ "Post tidak ditemukan atau belum dipublikasi"
+```
+
+### Step 4: Cara Kerja Route Model Binding
+
+```
+1. User akses: /blog/post/laravel-tips
+2. Laravel extract parameter: {post} = "laravel-tips"
+3. Custom binding triggered: Route::bind('post', function('laravel-tips', $request))
+4. Query executed: Cari post dengan slug + filter status
+5. Result: Post object dengan relationships di-inject ke controller
+6. Controller receives: public function show(Post $post) // $post sudah siap pakai
+```
+
+### Step 5: Update Controller Methods
+
+Karena sekarang binding sudah handle semua logic, controller jadi lebih bersih:
+
+```php
+// app/Http/Controllers/BlogController.php
+
+public function show(Post $post)
+{
+    // $post sudah:
+    // - Terfilter (published only untuk user biasa)
+    // - Include relationships (category, author, tags)
+    // - 404 handling sudah di binding
+
+    // Tambah view count
+    $post->incrementViews();
+
+    // Langsung return view
+    return view('blog.show', compact('post'));
+}
+
+public function category(Category $category)
+{
+    // $category sudah:
+    // - Terfilter (active only untuk user biasa)
+    // - 404 handling sudah di binding
+
+    $posts = $category->publishedPosts()
+                     ->with(['author', 'tags'])
+                     ->paginate(10);
+
+    return view('blog.category', compact('category', 'posts'));
+}
+
+public function tag(Tag $tag)
+{
+    // $tag sudah ter-handle di binding
+
+    $posts = $tag->publishedPosts()
+                 ->with(['category', 'author'])
+                 ->paginate(10);
+
+    return view('blog.tag', compact('tag', 'posts'));
+}
+```
+
+### Step 6: Test Custom Route Model Binding
+
+```bash
+# Test URL yang berfungsi
+http://127.0.0.1:8000/blog/post/memulai-perjalanan-dengan-laravel-12
+http://127.0.0.1:8000/blog/category/laravel-framework
+http://127.0.0.1:8000/blog/tag/laravel
+
+# Test error handling
+http://127.0.0.1:8000/blog/post/nonexistent-post
+# Response: 404 "Post tidak ditemukan atau belum dipublikasi"
+
+http://127.0.0.1:8000/blog/category/inactive-category
+# Response: 404 "Kategori tidak ditemukan"
+```
+
+Route Model Binding ini adalah fondasi yang sangat powerful untuk aplikasi blog yang profesional! 🚀
 
 ## 🔗 Deep Dive: Eloquent Relationships
 
