@@ -22,7 +22,11 @@ Route Model Binding adalah fitur Laravel yang secara otomatis mengkonversi param
 
 ### Step 1: Setup Custom Route Model Binding
 
-Edit file `app/Providers/RouteServiceProvider.php`. **Tambahkan** custom bindings setelah RateLimiter configuration:
+**Option 1: Copy dari Repository**
+File `app/Providers/RouteServiceProvider.php` sudah tersedia di repository dengan custom bindings lengkap. Anda bisa langsung menggunakan file tersebut.
+
+**Option 2: Edit Manual**
+Atau edit file `app/Providers/RouteServiceProvider.php` dengan menambahkan custom bindings setelah RateLimiter configuration:
 
 ```php
 <?php

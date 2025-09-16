@@ -113,7 +113,6 @@ Route::get('/contact', function () {
 Buat custom binding di `RouteServiceProvider`:
 
 ```php
-// app/Providers/RouteServiceProvider.php
 <?php
 
 namespace App\Providers;
@@ -121,57 +120,113 @@ namespace App\Providers;
 use App\Models\Post;
 use App\Models\Category;
 use App\Models\Tag;
-use App\Models\User;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 
 class RouteServiceProvider extends ServiceProvider
 {
-    public const HOME = '/blog';
+    /**
+     * The path to your application's "home" route.
+     *
+     * Typically, users are redirected here after authentication.
+     *
+     * @var string
+     */
+    public const HOME = '/home';
 
+    /**
+     * Define your route model bindings, pattern filters, and other route configuration.
+     */
     public function boot(): void
     {
-        // Custom route model bindings
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // ... existing bindings ...
+
         Route::bind('post', function (string $value, Request $request) {
-            // Find by slug, dengan published constraint untuk public routes
             $query = Post::where('slug', $value);
-            
-            // Jika bukan admin area, hanya show published posts
+
             if (!$request->is('admin/*')) {
                 $query->where('status', 'published')
                       ->where('published_at', '<=', now());
             }
-            
-            return $query->with(['category', 'author', 'tags'])
-                         ->firstOrFail();
+
+            $post = $query->with(['category', 'author', 'tags'])->first();
+
+            if (!$post) {
+                abort(404, 'Post tidak ditemukan atau belum dipublikasi');
+            }
+
+            return $post;
         });
 
-        Route::bind('category', function (string $value) {
-            return Category::where('slug', $value)
-                          ->where('is_active', true)
-                          ->with(['posts' => function($query) {
-                              $query->published()->limit(5);
-                          }])
-                          ->firstOrFail();
+        Route::bind('category', function (string $value, Request $request) {
+            $query = Category::where('slug', $value);
+
+            if (!$request->is('admin/*')) {
+                $query->where('is_active', true);
+            }
+
+            $category = $query->first();
+
+            if (!$category) {
+                abort(404, 'Kategori tidak ditemukan');
+            }
+
+            return $category;
         });
 
-        Route::bind('tag', function (string $value) {
-            return Tag::where('slug', $value)
-                     ->withCount(['posts' => function($query) {
-                         $query->published();
-                     }])
-                     ->firstOrFail();
+        Route::bind('tag', function (string $value, Request $request) {
+            $tag = Tag::where('slug', $value)->first();
+
+            if (!$tag) {
+                abort(404, 'Tag tidak ditemukan');
+            }
+
+            return $tag;
         });
 
-        Route::bind('author', function (string $value) {
-            return User::findOrFail($value);
-        });
+        $this->routes(function () {
+            Route::middleware('api')
+                ->prefix('api')
+                ->group(base_path('routes/api.php'));
 
-        $this->configureRateLimiting();
+            Route::middleware('web')
+                ->group(base_path('routes/web.php'));
+        });
     }
+}
+```
 
-    // ... rest of the class
+### Advanced Custom Bindings
+
+Selain binding dasar di atas, kita juga bisa menambahkan binding yang lebih advanced:
+
+```php
+// Di RouteServiceProvider.php, tambahkan binding lainnya:
+
+Route::bind('user', function (string $value) {
+    return User::where('username', $value)
+               ->where('is_active', true)
+               ->firstOrFail();
+});
+
+Route::bind('published_post', function (string $value) {
+    return Post::published()
+               ->where('slug', $value)
+               ->with(['category', 'author', 'tags'])
+               ->firstOrFail();
+});
+
+Route::bind('author', function (string $value) {
+    return User::where('username', $value)
+               ->orWhere('id', $value)
+               ->firstOrFail();
 }
 ```
 
