@@ -170,6 +170,50 @@ php artisan serve
 
 Kunjungi `http://127.0.0.1:8000/blog` di browser. Anda akan melihat halaman blog dengan 2 post dummy! 🎉
 
+### ⚠️ Troubleshooting: Port Collision Error
+
+**Jika halaman blog menampilkan content yang tidak sesuai atau ada error**, kemungkinan ada service lain yang berjalan di port 8000.
+
+**Masalah yang Mungkin Terjadi:**
+- Route `/blog` menampilkan halaman yang salah
+- Perubahan di `routes/web.php` tidak terlihat
+- Browser menampilkan website yang berbeda
+
+**Solusi:**
+
+**1. Check Port yang Digunakan:**
+```bash
+# Windows
+netstat -an | findstr :8000
+
+# Mac/Linux
+netstat -an | grep :8000
+```
+
+**2. Gunakan Port Berbeda:**
+```bash
+# Matikan server saat ini (Ctrl+C)
+# Jalankan dengan port custom
+php artisan serve --port=8001
+```
+
+**3. Akses dengan Port Baru:**
+```
+http://127.0.0.1:8001/blog
+```
+
+**4. Alternative - Kill Process di Port 8000:**
+```bash
+# Windows
+netstat -ano | findstr :8000
+taskkill /PID <PID_NUMBER> /F
+
+# Mac/Linux
+lsof -ti:8000 | xargs kill -9
+```
+
+**💡 Tips:** Selalu gunakan port custom (8001, 8002, etc.) jika Anda develop multiple Laravel project atau ada XAMPP/WAMP yang running.
+
 ## 🔄 Menambahkan Route Lainnya
 
 Mari kita tambahkan beberapa route lagi untuk melengkapi blog:
@@ -185,23 +229,25 @@ Route::get('/', function () {
 
 Route::get('/blog', function () {
     return view('blog.index');
-});
+})->name('blog.index');
 
 // Route untuk single post
 Route::get('/blog/post/{id}', function ($id) {
     return view('blog.show', ['id' => $id]);
-});
+})->name('blog.show');
 
 // Route untuk about page
 Route::get('/about', function () {
     return view('about');
-});
+})->name('about');
 
 // Route untuk contact
 Route::get('/contact', function () {
     return view('contact');
-});
+})->name('contact');
 ```
+
+**⚠️ CATATAN:** Route `/about` dan `/contact` di atas akan error jika diakses karena view nya belum dibuat. View untuk halaman ini akan dibuat di section **Challenge Implementation** di akhir lesson ini. Untuk saat ini, fokus ke route `/blog` dan `/blog/post/{id}` terlebih dahulu.
 
 ### Membuat View untuk Single Post
 
@@ -238,7 +284,7 @@ Buat file `resources/views/blog/show.blade.php`:
     </style>
 </head>
 <body>
-    <a href="/blog" class="back-link">← Kembali ke Blog</a>
+    <a href="{{ route('blog.index') }}" class="back-link">← Kembali ke Blog</a>
     
     <article>
         <h1>Detail Post #{{ $id }}</h1>
@@ -287,6 +333,144 @@ GET|HEAD  /blog/post/{id}      Closure
 GET|HEAD  /about               Closure
 GET|HEAD  /contact             Closure
 ```
+
+## 🏷️ Named Routes: Mengapa Penting?
+
+Perhatikan bahwa route kita menggunakan `->name()` di akhir. Ini adalah **Named Routes** - salah satu fitur paling powerful di Laravel!
+
+### 🤔 Analogi: Named Routes = Kontak di HP
+
+Bayangkan Anda punya nomor HP `081234567890`. Anda bisa:
+
+**❌ Metode Manual (Hard-coded URLs):**
+```html
+<!-- Ribet dan rawan error -->
+<a href="/blog">Blog</a>
+<a href="/blog/post/5">Post Detail</a>
+<a href="/about">About</a>
+```
+
+**✅ Metode Smart (Named Routes):**
+```html
+<!-- Elegant dan maintainable -->
+<a href="{{ route('blog.index') }}">Blog</a>
+<a href="{{ route('blog.show', 5) }}">Post Detail</a>
+<a href="{{ route('about') }}">About</a>
+```
+
+Sama seperti di HP - lebih mudah klik "Mama" daripada ingat nomornya!
+
+### 🔍 Cara Kerja Named Routes
+
+**1. Definisi Route dengan Name:**
+```php
+Route::get('/blog', function () {
+    return view('blog.index');
+})->name('blog.index');  // ← Nama route
+
+Route::get('/blog/post/{id}', function ($id) {
+    return view('blog.show', ['id' => $id]);
+})->name('blog.show');   // ← Nama route
+```
+
+**2. Penggunaan di View:**
+```blade
+<!-- Generate URL dengan nama -->
+<a href="{{ route('blog.index') }}">Ke Blog</a>
+
+<!-- Generate URL dengan parameter -->
+<a href="{{ route('blog.show', 5) }}">Post #5</a>
+
+<!-- Check active route -->
+@if(Route::currentRouteName() == 'blog.index')
+    <span>Sedang di halaman Blog</span>
+@endif
+```
+
+**3. Penggunaan di Controller (nanti):**
+```php
+// Redirect dengan nama
+return redirect()->route('blog.index');
+
+// Generate URL
+$url = route('blog.show', ['id' => 10]);
+```
+
+### ✨ Keuntungan Named Routes
+
+**1. Maintainability**
+```php
+// Kalau URL berubah dari /blog ke /articles
+Route::get('/articles', function () {  // ← URL berubah
+    return view('blog.index');
+})->name('blog.index');                // ← Name tetap sama
+
+// Semua link {{ route('blog.index') }} otomatis update! 🎉
+```
+
+**2. IDE Support**
+```blade
+{{ route('blog.index') }}  <!-- ✅ IDE bisa autocomplete -->
+{{ url('/blog') }}         <!-- ❌ IDE tidak tahu -->
+```
+
+**3. Parameter Handling**
+```blade
+<!-- Named route dengan parameter -->
+{{ route('blog.show', ['id' => 10]) }}
+{{ route('blog.show', 10) }}  <!-- Shorthand -->
+
+<!-- Manual URL (error-prone) -->
+{{ "/blog/post/" . 10 }}      <!-- ❌ Ribet -->
+```
+
+### 🔧 Melihat Named Routes
+
+Untuk melihat route dengan nama:
+
+```bash
+php artisan route:list --name=blog
+```
+
+Output:
+```
+POST     blog.index  /blog        Closure
+GET|HEAD blog.show   /blog/post/{id}  Closure
+```
+
+### 📝 Best Practices Named Routes
+
+**1. Naming Convention:**
+```php
+// ✅ Gunakan dot notation yang konsisten
+Route::get('/blog', ...)->name('blog.index');
+Route::get('/blog/post/{id}', ...)->name('blog.show');
+Route::get('/blog/create', ...)->name('blog.create');
+Route::post('/blog', ...)->name('blog.store');
+
+// ❌ Jangan inconsistent
+Route::get('/blog', ...)->name('blogIndex');
+Route::get('/blog/post/{id}', ...)->name('show_blog_post');
+```
+
+**2. Logical Grouping:**
+```php
+// Resource routes (akan dipelajari later)
+Route::resource('blog', BlogController::class)->names([
+    'index' => 'blog.index',
+    'show' => 'blog.show',
+    'create' => 'blog.create',
+    // dst...
+]);
+```
+
+**3. Testing Routes:**
+```blade
+<!-- Update link di blog/show.blade.php -->
+<a href="{{ route('blog.index') }}" class="back-link">← Kembali ke Blog</a>
+```
+
+Mari kita update link di view kita untuk menggunakan named routes!
 
 ## 🎨 Blade Templating Basics
 

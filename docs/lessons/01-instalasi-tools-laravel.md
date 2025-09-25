@@ -134,11 +134,26 @@ Sebelum konfigurasi Laravel, kita perlu menyiapkan database MySQL:
 
 ### Step 4: Konfigurasi Environment
 
-Laravel menggunakan file `.env` untuk konfigurasi. Edit file `.env`:
+**PENTING untuk Laravel 12:** Laravel 12 secara default menggunakan SQLite sebagai database, bukan MySQL seperti versi sebelumnya. Untuk tutorial ini, kita akan mengubahnya ke MySQL agar sesuai dengan setup XAMPP.
 
+Laravel menggunakan file `.env` untuk konfigurasi. Edit file `.env` dan ubah konfigurasi database dari SQLite ke MySQL:
+
+Cari dan ubah konfigurasi database ini di file `.env`:
+
+**UBAH DARI:**
+```env
+DB_CONNECTION=sqlite
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=laravel
+# DB_USERNAME=root
+# DB_PASSWORD=
+```
+
+**MENJADI:**
 ```env
 # Pengaturan Database MySQL - Laravel butuh tahu cara hubung ke database
-DB_CONNECTION=mysql          # Kita pakai MySQL (bukan PostgreSQL atau SQLite)
+DB_CONNECTION=mysql          # Kita pakai MySQL (bukan SQLite)
 DB_HOST=127.0.0.1           # Database ada di komputer kita sendiri
 DB_PORT=3306                # MySQL biasanya pakai pintu 3306 (bawaan)
 DB_DATABASE=laravel_blog    # Nama database yang tadi kita buat di phpMyAdmin
@@ -146,7 +161,7 @@ DB_USERNAME=root            # Nama pengguna untuk masuk MySQL (XAMPP bawaannya "
 DB_PASSWORD=                # Kata sandi kosong karena XAMPP bawaan tanpa kata sandi
 ```
 
-**Pastikan menghapus tanda # (uncomment) pada semua baris DB_* di atas!**
+**PENTING:** Hapus tanda `#` di depan setiap baris DB_ dan pastikan `DB_CONNECTION=mysql`!
 
 ### Step 5: Generate Application Key
 
@@ -158,23 +173,56 @@ php artisan key:generate
 
 ### Step 6: Jalankan Migration Default
 
-**Pastikan XAMPP MySQL sudah berjalan sebelum menjalankan migration!**
-
-Laravel sudah menyediakan beberapa migration default. Jalankan:
+**⚠️ PENTING:** Pastikan Anda berada di dalam directory project Laravel sebelum menjalankan perintah artisan!
 
 ```bash
+# Pastikan Anda di dalam folder project Laravel
+cd blog-laravel
+
+# Pastikan XAMPP MySQL sudah berjalan sebelum migration
 # Buat tabel-tabel bawaan Laravel di database kita
-# Laravel sudah sediakan tabel pengguna (untuk masuk) dan tabel lainnya
 php artisan migrate
 ```
 
-Anda akan melihat output seperti ini:
+**FITUR BARU Laravel 12:** Jika database belum ada, Laravel 12 akan menanyakan apakah Anda ingin membuatnya:
 ```
-Migration table created successfully.
-Migrating: 2014_10_12_000000_create_users_table
-Migrated:  2014_10_12_000000_create_users_table (25.67ms)
-...
+WARN  The database 'laravel_blog' does not exist on the 'mysql' connection.
+
+Would you like to create it? (yes/no) [yes]
+❯ yes
 ```
+
+Ketik `yes` dan tekan Enter. Laravel akan membuat database dan menjalankan migration:
+
+```
+INFO  Preparing database.
+Creating migration table ............................ DONE
+INFO  Running migrations.
+0001_01_01_000000_create_users_table ................ DONE
+0001_01_01_000001_create_cache_table ................ DONE
+0001_01_01_000002_create_jobs_table ................. DONE
+```
+
+**⚠️ PENTING - Troubleshooting Database:**
+
+Jika Anda mendapat error `Unknown database 'laravel_blog'` atau `Connection refused`, ikuti langkah berikut:
+
+1. **Pastikan XAMPP MySQL berjalan:**
+   - Buka XAMPP Control Panel
+   - Klik "Start" pada Apache dan MySQL
+   - Pastikan kedua service berwarna hijau
+
+2. **Alternative: Buat database manual melalui phpMyAdmin**
+   - Buka browser dan kunjungi `http://localhost/phpmyadmin`
+   - Klik "New" di sidebar kiri
+   - Nama database: `laravel_blog`
+   - Collation: `utf8mb4_general_ci`
+   - Klik "Create"
+
+3. **Jika MySQL command tidak ditemukan:**
+   - Ini normal jika MySQL tidak ada di PATH
+   - Gunakan fitur auto-create Laravel atau phpMyAdmin
+   - Tidak perlu install MySQL CLI secara terpisah
 
 ## 🏃‍♂️ Menjalankan Server Development
 
@@ -602,6 +650,10 @@ Dengan semua test di atas berhasil, environment development Anda sudah siap untu
 
 ## 📝 Troubleshooting
 
+**Error: "Could not open input file: artisan"**
+- Anda tidak berada di dalam directory project Laravel
+- Solusi: Pastikan Anda sudah menjalankan `cd blog-laravel` terlebih dahulu
+
 **Error: "php command not found"**
 - PHP belum terinstall atau tidak ada di PATH
 - Solusi: Install PHP dan tambahkan ke system PATH
@@ -612,18 +664,22 @@ Dengan semua test di atas berhasil, environment development Anda sudah siap untu
 
 **Error: Database connection failed**
 - XAMPP MySQL belum berjalan atau database belum dibuat
-- Solusi: 
+- Solusi:
   1. Pastikan XAMPP MySQL service aktif
   2. Database `laravel_blog` sudah dibuat di phpMyAdmin
   3. Konfigurasi `.env` sudah benar (uncomment semua baris DB_*)
 
 **Error: "SQLSTATE[HY000] [1049] Unknown database"**
-- Database belum dibuat di phpMyAdmin
-- Solusi: Buat database `laravel_blog` melalui phpMyAdmin
+- Database belum dibuat di phpMyAdmin atau XAMPP MySQL belum berjalan
+- Solusi:
+  1. Buka XAMPP Control Panel dan pastikan MySQL berjalan (warna hijau)
+  2. Gunakan fitur auto-create Laravel 12: ketik `yes` saat diminta
+  3. Alternative: Buat database `laravel_blog` manual di phpMyAdmin
 
 **Error: Migration gagal**
 - Periksa koneksi database dan pastikan semua service XAMPP berjalan
 - Pastikan tidak ada typo di konfigurasi `.env`
+- Pastikan berada di directory yang benar (`cd blog-laravel`)
 
 ---
 

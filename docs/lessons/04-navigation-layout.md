@@ -356,52 +356,257 @@ Buat file `resources/views/components/layout/sidebar.blade.php`:
 </aside>
 ```
 
+## 🧩 Memahami Laravel Layout System
+
+Sebelum kita buat layout utama, mari pahami dulu konsep **Layout Inheritance** di Blade - ini adalah foundation dari semua web app Laravel!
+
+### 🏗️ Analogi: Layout = Template Rumah
+
+Bayangkan Anda architect yang punya **template rumah standar**:
+
+**🏠 Template Rumah (Layout)**
+```
+┌─────────────────────────────┐
+│         ATAP (Header)       │
+├─────────────────────────────┤
+│ RUANG UTAMA (Content Area)  │ ← Area ini berubah-ubah
+│                             │
+├─────────────────────────────┤
+│       FONDASI (Footer)      │
+└─────────────────────────────┘
+```
+
+**📄 Halaman Individual (Views)**
+- Blog → Isi ruang utama dengan postingan
+- About → Isi ruang utama dengan profil
+- Contact → Isi ruang utama dengan form
+
+### 🔄 Cara Kerja @yield dan @section
+
+**1. Layout (Parent) - Template Rumah:**
+```blade
+<!-- layouts/app.blade.php -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>@yield('title', 'Default Title')</title>
+</head>
+<body>
+    <nav>Navigation Bar</nav>
+
+    <main>
+        @yield('content')  <!-- ← Area yang berubah-ubah -->
+    </main>
+
+    <footer>Footer</footer>
+</body>
+</html>
+```
+
+**2. View (Child) - Isi Rumah:**
+```blade
+<!-- blog/index.blade.php -->
+@extends('layouts.app')  <!-- ← Pakai template rumah -->
+
+@section('title', 'Blog Page')  <!-- ← Isi title -->
+
+@section('content')             <!-- ← Isi ruang utama -->
+    <h1>Welcome to Blog!</h1>
+    <p>Konten blog di sini...</p>
+@endsection
+```
+
+**3. Hasil Akhir (Compile):**
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blog Page</title>  <!-- ← From @section('title') -->
+</head>
+<body>
+    <nav>Navigation Bar</nav>
+
+    <main>
+        <h1>Welcome to Blog!</h1>     <!-- ← From @section('content') -->
+        <p>Konten blog di sini...</p>
+    </main>
+
+    <footer>Footer</footer>
+</body>
+</html>
+```
+
+### 🎯 Keuntungan Layout System
+
+**1. DRY (Don't Repeat Yourself)**
+```blade
+<!-- ❌ Tanpa layout - REPETITIVE -->
+<!-- blog.blade.php -->
+<!DOCTYPE html>
+<html><head>...</head><body><nav>...</nav>
+CONTENT BLOG
+<footer>...</footer></body></html>
+
+<!-- about.blade.php -->
+<!DOCTYPE html>
+<html><head>...</head><body><nav>...</nav>
+CONTENT ABOUT
+<footer>...</footer></body></html>
+
+<!-- ✅ Dengan layout - CLEAN -->
+<!-- blog.blade.php -->
+@extends('layouts.app')
+@section('content') CONTENT BLOG @endsection
+
+<!-- about.blade.php -->
+@extends('layouts.app')
+@section('content') CONTENT ABOUT @endsection
+```
+
+**2. Consistent Design**
+- Header, navigation, footer sama di semua halaman
+- Font, color scheme, spacing konsisten
+- Meta tags SEO centralized
+
+**3. Easy Maintenance**
+- Update navigation? Cukup edit 1 file layout
+- Ganti footer? Semua halaman terupdate
+- Add analytics script? Sekali edit di layout
+
+### 🔧 Advanced Layout Features
+
+**1. Conditional Content**
+```blade
+<!-- Layout bisa punya logika -->
+@if(isset($showSidebar) && $showSidebar)
+    <div class="grid grid-cols-3">
+        <main class="col-span-2">@yield('content')</main>
+        <aside class="col-span-1">@include('sidebar')</aside>
+    </div>
+@else
+    <main>@yield('content')</main>
+@endif
+```
+
+**2. Multiple Sections**
+```blade
+<!-- Layout bisa punya banyak area -->
+<head>
+    @yield('meta-tags')
+    @stack('styles')      <!-- ← CSS khusus per halaman -->
+</head>
+<body>
+    @yield('content')
+    @stack('scripts')     <!-- ← JS khusus per halaman -->
+</body>
+```
+
+**3. Stack untuk Assets**
+```blade
+<!-- Di view individual -->
+@push('styles')
+    <link rel="stylesheet" href="special.css">
+@endpush
+
+@push('scripts')
+    <script src="chart.js"></script>
+@endpush
+```
+
+### 📋 Best Practices Layout
+
+**1. Keep It Simple**
+```blade
+<!-- ✅ Layout should be clean -->
+<body>
+    @include('components.navigation')
+    <main>@yield('content')</main>
+    @include('components.footer')
+</body>
+
+<!-- ❌ Don't put business logic in layout -->
+<body>
+    @foreach($complex_data as $item) ... @endforeach  <!-- ❌ NO -->
+</body>
+```
+
+**2. Use Components for Reusable Parts**
+```blade
+<!-- Layout menggunakan components -->
+<x-layout.navigation />  <!-- ← Component -->
+@yield('content')        <!-- ← Variable content -->
+<x-layout.footer />      <!-- ← Component -->
+```
+
+**3. Semantic Section Names**
+```blade
+@yield('title')       <!-- ✅ Clear purpose -->
+@yield('content')     <!-- ✅ Main content area -->
+@yield('meta-desc')   <!-- ✅ SEO description -->
+
+@yield('stuff')       <!-- ❌ Unclear -->
+@yield('area1')       <!-- ❌ Not semantic -->
+```
+
+Sekarang mari kita implementasikan layout dengan pemahaman yang solid!
+
 ### Step 8: Update Main Layout
 
 Update `resources/views/layouts/app.blade.php`:
 
 ```html
 <!DOCTYPE html>
-<html lang="id" class="h-full">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="@yield('description', 'Blog Laravel - Berbagi pengalaman web development')">
-    <title>@yield('title', 'Blog Laravel Saya')</title>
-    
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <title>@yield('title', 'Laravel Blog Indonesia - Tutorial & Tips Laravel')</title>
+    <meta name="description" content="@yield('description', 'Tutorial Laravel terlengkap dalam bahasa Indonesia. Pelajari Laravel dari basic hingga advanced dengan contoh project nyata.')">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Vite Assets -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
-    @stack('head')
+
+    <!-- Additional Styles -->
+    @stack('styles')
 </head>
-<body class="h-full bg-gray-50">
+<body class="font-inter bg-gray-50 text-gray-900 antialiased">
     <!-- Navigation -->
-    @include('components.layout.navigation')
+    <x-layout.navigation />
 
     <!-- Main Content -->
-    <main class="@yield('main-class', 'max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8')">
-        @if(isset($showSidebar) && $showSidebar)
-            <div class="lg:grid lg:grid-cols-3 lg:gap-12">
-                <div class="lg:col-span-2">
+    <main>
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            @if(isset($showSidebar) && $showSidebar)
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 py-12">
+                    <!-- Main Content -->
+                    <div class="lg:col-span-3">
+                        @yield('content')
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="lg:col-span-1">
+                        <x-layout.sidebar />
+                    </div>
+                </div>
+            @else
+                <div class="py-12">
                     @yield('content')
                 </div>
-                <div class="lg:col-span-1 mt-12 lg:mt-0">
-                    @include('components.layout.sidebar')
-                </div>
-            </div>
-        @else
-            @yield('content')
-        @endif
+            @endif
+        </div>
     </main>
 
     <!-- Footer -->
-    @include('components.layout.footer')
-    
+    <x-layout.footer />
+
+    <!-- Additional Scripts -->
     @stack('scripts')
 </body>
 </html>

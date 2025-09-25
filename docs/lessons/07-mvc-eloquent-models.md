@@ -45,6 +45,183 @@ Setelah menyelesaikan pelajaran ini, Anda akan:
 - ✅ Menggunakan data real di views
 - ✅ Memahami mass assignment dan fillable properties
 
+## 🔧 Prerequisites dan Verifikasi
+
+**PENTING**: Sebelum memulai lesson ini, pastikan Anda sudah menyelesaikan Lesson 6 dengan lengkap, terutama:
+
+### ✅ Checklist Dependency
+
+```bash
+# 1. Verifikasi semua migration sudah dijalankan
+php artisan migrate:status
+
+# 2. Verifikasi tabel users memiliki field tambahan
+php artisan tinker
+>>> \Schema::getColumnListing('users')
+>>> exit
+```
+
+**Expected Output untuk users table:**
+```php
+[
+  "id",
+  "name",
+  "email",
+  "email_verified_at",
+  "password",
+  "avatar",           // ← Harus ada (dari Lesson 6)
+  "bio",              // ← Harus ada (dari Lesson 6)
+  "role",             // ← Harus ada (dari Lesson 6)
+  "remember_token",
+  "last_active_at",   // ← Harus ada (dari Lesson 6)
+  "created_at",
+  "updated_at"
+]
+```
+
+### 🚨 Troubleshooting Dependency
+
+**Jika field `avatar`, `bio`, `role`, `last_active_at` tidak ada:**
+
+1. **Kembali ke Lesson 6** dan jalankan migration users:
+```bash
+php artisan make:migration add_additional_fields_to_users_table --table=users
+```
+
+2. **Atau, buat migration baru di lesson ini:**
+```bash
+php artisan make:migration add_blog_fields_to_users_table --table=users
+```
+
+Edit migration:
+```php
+public function up(): void
+{
+    Schema::table('users', function (Blueprint $table) {
+        // Cek jika kolom belum ada
+        if (!Schema::hasColumn('users', 'avatar')) {
+            $table->string('avatar')->nullable()->after('email');
+        }
+        if (!Schema::hasColumn('users', 'bio')) {
+            $table->text('bio')->nullable()->after('avatar');
+        }
+        if (!Schema::hasColumn('users', 'role')) {
+            $table->enum('role', ['admin', 'author', 'user'])->default('user')->after('bio');
+        }
+        if (!Schema::hasColumn('users', 'last_active_at')) {
+            $table->timestamp('last_active_at')->nullable()->after('remember_token');
+        }
+    });
+}
+```
+
+3. **Jalankan migration:**
+```bash
+php artisan migrate
+```
+
+## 🔒 Memahami Mass Assignment Protection
+
+Sebelum kita buat models, mari pahami dulu konsep keamanan **Mass Assignment** di Laravel!
+
+### 🛡️ Analogi: Mass Assignment = Security di Hotel
+
+Bayangkan Anda manager hotel yang punya **kartu akses master**:
+
+**❌ Tanpa Protection:**
+```php
+// Tamu bisa isi formulir dan akses SEMUA room!
+$user = User::create($request->all()); // BAHAYA!
+
+// $request bisa berisi:
+// name = "John"
+// email = "john@test.com"
+// role = "admin"           ← Tamu jadi admin!
+// password = "hacked"      ← Tamu ganti password orang lain!
+```
+
+**✅ Dengan Fillable Protection:**
+```php
+// Model User:
+protected $fillable = ['name', 'email']; // Cuma ini yang boleh diisi
+
+// Tamu cuma bisa isi field yang diizinkan:
+$user = User::create($request->all()); // AMAN!
+// Cuma name & email yang diproses, role & password diabaikan
+```
+
+### 📋 Cara Kerja Fillable
+
+**1. Whitelist Approach (Recommended):**
+```php
+class User extends Model
+{
+    // ✅ Daftar putih: field yang BOLEH diisi
+    protected $fillable = [
+        'name',
+        'email',
+        'avatar',
+        'bio'
+    ];
+
+    // password & role TIDAK ada = TIDAK bisa diisi mass assignment
+}
+```
+
+**2. Blacklist Approach (Alternative):**
+```php
+class User extends Model
+{
+    // ❌ Daftar hitam: field yang TIDAK BOLEH diisi
+    protected $guarded = [
+        'password',
+        'role',
+        'remember_token'
+    ];
+
+    // Semua field lain boleh diisi
+}
+```
+
+### 🎯 Best Practices Mass Assignment
+
+**1. Explicit is Better:**
+```php
+// ✅ Explicit - jelas field mana yang diizinkan
+protected $fillable = ['name', 'email', 'bio'];
+
+// ❌ Implicit - kurang jelas
+protected $guarded = ['*'];
+```
+
+**2. Sensitive Fields:**
+```php
+// ❌ JANGAN masukkan field sensitif ke fillable
+protected $fillable = [
+    'name',
+    'password',    // ❌ BAHAYA!
+    'role',        // ❌ BAHAYA!
+    'admin_token', // ❌ BAHAYA!
+];
+
+// ✅ Gunakan accessor/mutator untuk field sensitif
+public function setPasswordAttribute($value) {
+    $this->attributes['password'] = bcrypt($value);
+}
+```
+
+**3. Alternative Assignment:**
+```php
+// Untuk field sensitif, assign manual:
+$user = new User();
+$user->name = $request->name;
+$user->email = $request->email;
+$user->role = 'user'; // ← Manual assignment (aman)
+$user->save();
+```
+
+Sekarang dengan pemahaman security yang kuat, mari kita buat models yang aman dan powerful!
+
 ## 🏗️ Memahami MVC Architecture
 
 ### Model-View-Controller Pattern
@@ -466,9 +643,9 @@ class User extends Authenticatable
         'name',     // Nama lengkap pengguna
         'email',    // Alamat email (untuk login)
         'password', // Kata sandi (otomatis di-hash/acak Laravel)
-        'avatar',   // Foto profil pengguna
-        'bio',      // Deskripsi singkat tentang pengguna
-        'role',     // Peran: admin, penulis, pengguna biasa
+        'avatar',   // Foto profil pengguna (TAMBAHAN dari Lesson 6)
+        'bio',      // Deskripsi singkat tentang pengguna (TAMBAHAN dari Lesson 6)
+        'role',     // Peran: admin, penulis, pengguna biasa (TAMBAHAN dari Lesson 6)
     ];
 
     // Data yang disembunyikan saat pengguna diubah jadi JSON/array

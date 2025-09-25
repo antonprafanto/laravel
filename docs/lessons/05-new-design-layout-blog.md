@@ -16,6 +16,9 @@ Setelah menyelesaikan pelajaran ini, Anda akan:
 
 Mari kita update `resources/views/blog/index.blade.php` dengan design yang lebih fokus:
 
+**💡 Best Practice - Named Routes**:
+Dalam lesson ini, kita akan konsisten menggunakan named routes seperti `{{ route('blog.show', $id) }}` instead of hardcoded URLs seperti `/blog/post/1`. Ini mengikuti Laravel conventions yang sudah kita establish di lesson-lesson sebelumnya dan memudahkan maintenance.
+
 ```html
 @extends('layouts.app')
 
@@ -36,28 +39,28 @@ Mari kita update `resources/views/blog/index.blade.php` dengan design yang lebih
     </div>
 
     <!-- Featured Post Section -->
-    <section class="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl text-white overflow-hidden">
+    <section class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl text-white overflow-hidden">
         <div class="p-8 lg:p-12">
             <div class="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
                 <div>
-                    <div class="inline-flex items-center bg-primary-500 bg-opacity-50 rounded-full px-4 py-2 text-sm font-medium mb-4">
+                    <div class="inline-flex items-center bg-blue-500 bg-opacity-50 rounded-full px-4 py-2 text-sm font-medium mb-4">
                         <span class="w-2 h-2 bg-yellow-400 rounded-full mr-2"></span>
                         Featured Post
                     </div>
                     <h2 class="text-3xl lg:text-4xl font-bold mb-4">
                         Membangun Aplikasi Blog dengan Laravel 12
                     </h2>
-                    <p class="text-xl text-primary-100 mb-6">
+                    <p class="text-xl text-blue-100 mb-6">
                         Pelajari cara membangun aplikasi blog lengkap dari awal hingga deploy dengan Laravel 12 terbaru.
                     </p>
-                    <div class="flex items-center space-x-6 text-primary-200 text-sm mb-6">
+                    <div class="flex items-center space-x-6 text-blue-200 text-sm mb-6">
                         <span>By Admin</span>
                         <span>•</span>
                         <span>10 September 2025</span>
                         <span>•</span>
                         <span>8 min read</span>
                     </div>
-                    <a href="/blog/post/1" class="inline-flex items-center bg-white text-primary-600 font-semibold px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <a href="{{ route('blog.show', 1) }}" class="inline-flex items-center bg-white text-blue-600 font-semibold px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors">
                         Baca Artikel
                         <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -82,7 +85,7 @@ Mari kita update `resources/views/blog/index.blade.php` dengan design yang lebih
     <section>
         <div class="flex items-center justify-between mb-8">
             <h2 class="text-3xl font-bold text-gray-900">Recent Posts</h2>
-            <a href="#" class="text-primary-600 hover:text-primary-700 font-medium">
+            <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">
                 View All →
             </a>
         </div>
@@ -104,7 +107,7 @@ Mari kita update `resources/views/blog/index.blade.php` dengan design yang lebih
                         <span>9 September 2025</span>
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-3">
-                        <a href="/blog/post/2" class="hover:text-primary-600 transition-colors">
+                        <a href="{{ route('blog.show', 2) }}" class="hover:text-blue-600 transition-colors">
                             Laravel Eloquent: Tips dan Tricks untuk Developer
                         </a>
                     </h3>
@@ -117,7 +120,7 @@ Mari kita update `resources/views/blog/index.blade.php` dengan design yang lebih
                             <span>•</span>
                             <span>124 views</span>
                         </div>
-                        <a href="/blog/post/2" class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+                        <a href="{{ route('blog.show', 2) }}" class="text-blue-600 hover:text-blue-700 font-medium text-sm">
                             Read More
                         </a>
                     </div>
@@ -140,7 +143,7 @@ Mari kita update `resources/views/blog/index.blade.php` dengan design yang lebih
                         <span>8 September 2025</span>
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-3">
-                        <a href="/blog/post/3" class="hover:text-primary-600 transition-colors">
+                        <a href="{{ route('blog.show', 3) }}" class="hover:text-blue-600 transition-colors">
                             Membuat REST API dengan Laravel Sanctum
                         </a>
                     </h3>
@@ -153,7 +156,7 @@ Mari kita update `resources/views/blog/index.blade.php` dengan design yang lebih
                             <span>•</span>
                             <span>89 views</span>
                         </div>
-                        <a href="/blog/post/3" class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+                        <a href="{{ route('blog.show', 3) }}" class="text-blue-600 hover:text-blue-700 font-medium text-sm">
                             Read More
                         </a>
                     </div>
@@ -176,7 +179,7 @@ Mari kita update `resources/views/blog/index.blade.php` dengan design yang lebih
                         <span>7 September 2025</span>
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-3">
-                        <a href="/blog/post/4" class="hover:text-primary-600 transition-colors">
+                        <a href="{{ route('blog.show', 4) }}" class="hover:text-blue-600 transition-colors">
                             Optimasi Performa Aplikasi Laravel
                         </a>
                     </h3>
@@ -189,7 +192,7 @@ Mari kita update `resources/views/blog/index.blade.php` dengan design yang lebih
                             <span>•</span>
                             <span>203 views</span>
                         </div>
-                        <a href="/blog/post/4" class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+                        <a href="{{ route('blog.show', 4) }}" class="text-blue-600 hover:text-blue-700 font-medium text-sm">
                             Read More
                         </a>
                     </div>
@@ -212,7 +215,7 @@ Mari kita update `resources/views/blog/index.blade.php` dengan design yang lebih
                         <span>6 September 2025</span>
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-3">
-                        <a href="/blog/post/5" class="hover:text-primary-600 transition-colors">
+                        <a href="{{ route('blog.show', 5) }}" class="hover:text-blue-600 transition-colors">
                             Developer Tools Wajib untuk Laravel
                         </a>
                     </h3>
@@ -225,7 +228,7 @@ Mari kita update `resources/views/blog/index.blade.php` dengan design yang lebih
                             <span>•</span>
                             <span>156 views</span>
                         </div>
-                        <a href="/blog/post/5" class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+                        <a href="{{ route('blog.show', 5) }}" class="text-blue-600 hover:text-blue-700 font-medium text-sm">
                             Read More
                         </a>
                     </div>
@@ -247,9 +250,9 @@ Mari kita update `resources/views/blog/index.blade.php` dengan design yang lebih
             <form class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
                 <input type="email" 
                        placeholder="Email address..." 
-                       class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                       class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 <button type="submit" 
-                        class="bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors">
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors">
                     Subscribe
                 </button>
             </form>
@@ -274,7 +277,7 @@ Mari kita update `resources/views/blog/show.blade.php` untuk template yang lebih
     <nav class="flex mb-8" aria-label="Breadcrumb">
         <ol class="inline-flex items-center space-x-1 md:space-x-3">
             <li class="inline-flex items-center">
-                <a href="/blog" class="text-gray-500 hover:text-gray-700">Blog</a>
+                <a href="{{ route('blog.index') }}" class="text-gray-500 hover:text-gray-700">Blog</a>
             </li>
             <li>
                 <div class="flex items-center">
@@ -298,7 +301,7 @@ Mari kita update `resources/views/blog/show.blade.php` untuk template yang lebih
     <!-- Article -->
     <article class="bg-white rounded-2xl shadow-sm overflow-hidden">
         <!-- Featured Image Placeholder -->
-        <div class="aspect-video bg-gradient-to-br from-primary-500 to-primary-600 relative">
+        <div class="aspect-video bg-gradient-to-br from-blue-500 to-blue-600 relative">
             <div class="absolute inset-0 flex items-center justify-center text-white">
                 <div class="text-center">
                     <div class="text-6xl mb-4">📝</div>
@@ -311,7 +314,7 @@ Mari kita update `resources/views/blog/show.blade.php` untuk template yang lebih
         <!-- Article Header -->
         <div class="p-8 lg:p-12 border-b">
             <div class="flex items-center space-x-4 text-sm text-gray-500 mb-6">
-                <span class="bg-primary-100 text-primary-700 px-3 py-1 rounded-full font-medium">Laravel</span>
+                <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">Laravel</span>
                 <span>•</span>
                 <span>10 September 2025</span>
                 <span>•</span>
@@ -345,7 +348,7 @@ Mari kita update `resources/views/blog/show.blade.php` untuk template yang lebih
                     membangun aplikasi web dengan cepat dan efisien.
                 </p>
                 
-                <blockquote class="border-l-4 border-primary-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
+                <blockquote class="border-l-4 border-blue-500 pl-6 py-4 bg-gray-50 rounded-r-lg">
                     <p class="text-lg italic text-gray-700">
                         "Laravel takes the pain out of development by easing common tasks used in many web projects."
                     </p>
@@ -435,14 +438,14 @@ Mari kita update `resources/views/blog/show.blade.php` untuk template yang lebih
     <div class="mt-12 grid md:grid-cols-2 gap-6">
         <!-- Previous Post -->
         @if($id > 1)
-        <a href="/blog/post/{{ $id - 1 }}" class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow group">
-            <div class="flex items-center text-primary-600 text-sm font-medium mb-2">
+        <a href="{{ route('blog.show', $id - 1) }}" class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow group">
+            <div class="flex items-center text-blue-600 text-sm font-medium mb-2">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
                 Previous Post
             </div>
-            <h3 class="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
+            <h3 class="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                 Post {{ $id - 1 }}: Judul Artikel Sebelumnya
             </h3>
             <p class="text-gray-600 text-sm mt-1">
@@ -454,14 +457,14 @@ Mari kita update `resources/views/blog/show.blade.php` untuk template yang lebih
         @endif
         
         <!-- Next Post -->
-        <a href="/blog/post/{{ $id + 1 }}" class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow group">
-            <div class="flex items-center justify-end text-primary-600 text-sm font-medium mb-2">
+        <a href="{{ route('blog.show', $id + 1) }}" class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow group">
+            <div class="flex items-center justify-end text-blue-600 text-sm font-medium mb-2">
                 Next Post
                 <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
             </div>
-            <h3 class="font-semibold text-gray-900 group-hover:text-primary-600 transition-colors text-right">
+            <h3 class="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors text-right">
                 Post {{ $id + 1 }}: Judul Artikel Selanjutnya
             </h3>
             <p class="text-gray-600 text-sm mt-1 text-right">
@@ -483,8 +486,8 @@ Mari kita update `resources/views/blog/show.blade.php` untuk template yang lebih
                     </div>
                 </div>
                 <div class="p-4">
-                    <h3 class="font-semibold text-gray-900 mb-2 hover:text-primary-600 transition-colors">
-                        <a href="/blog/post/{{ $i == 1 ? 6 : $i }}">Related Post {{ $i == 1 ? 6 : $i }}</a>
+                    <h3 class="font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors">
+                        <a href="{{ route('blog.show', $i == 1 ? 6 : $i) }}">Related Post {{ $i == 1 ? 6 : $i }}</a>
                     </h3>
                     <p class="text-gray-600 text-sm mb-3">
                         Brief description of related post...
@@ -515,7 +518,7 @@ Update `resources/views/components/layout/sidebar.blade.php` dengan placeholders
             Tutorial Laravel terlengkap dalam bahasa Indonesia. Dari basic hingga advanced, 
             semua materi disusun secara sistematis untuk memudahkan pembelajaran.
         </p>
-        <a href="/about" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
+        <a href="{{ route('about') }}" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
             Learn More →
         </a>
     </div>
@@ -526,20 +529,20 @@ Update `resources/views/components/layout/sidebar.blade.php` dengan placeholders
         <div class="space-y-3">
             <!-- These will be dynamic from database -->
             <a href="#" class="flex items-center justify-between text-gray-600 hover:text-gray-900 transition-colors group">
-                <span class="group-hover:text-primary-600">Laravel Framework</span>
-                <span class="text-xs bg-gray-100 group-hover:bg-primary-100 text-gray-600 group-hover:text-primary-600 px-2 py-1 rounded-full">12</span>
+                <span class="group-hover:text-blue-600">Laravel Framework</span>
+                <span class="text-xs bg-gray-100 group-hover:bg-blue-100 text-gray-600 group-hover:text-blue-600 px-2 py-1 rounded-full">12</span>
             </a>
             <a href="#" class="flex items-center justify-between text-gray-600 hover:text-gray-900 transition-colors group">
-                <span class="group-hover:text-primary-600">PHP Programming</span>
-                <span class="text-xs bg-gray-100 group-hover:bg-primary-100 text-gray-600 group-hover:text-primary-600 px-2 py-1 rounded-full">8</span>
+                <span class="group-hover:text-blue-600">PHP Programming</span>
+                <span class="text-xs bg-gray-100 group-hover:bg-blue-100 text-gray-600 group-hover:text-blue-600 px-2 py-1 rounded-full">8</span>
             </a>
             <a href="#" class="flex items-center justify-between text-gray-600 hover:text-gray-900 transition-colors group">
-                <span class="group-hover:text-primary-600">Web Development</span>
-                <span class="text-xs bg-gray-100 group-hover:bg-primary-100 text-gray-600 group-hover:text-primary-600 px-2 py-1 rounded-full">15</span>
+                <span class="group-hover:text-blue-600">Web Development</span>
+                <span class="text-xs bg-gray-100 group-hover:bg-blue-100 text-gray-600 group-hover:text-blue-600 px-2 py-1 rounded-full">15</span>
             </a>
             <a href="#" class="flex items-center justify-between text-gray-600 hover:text-gray-900 transition-colors group">
-                <span class="group-hover:text-primary-600">Tutorial</span>
-                <span class="text-xs bg-gray-100 group-hover:bg-primary-100 text-gray-600 group-hover:text-primary-600 px-2 py-1 rounded-full">25</span>
+                <span class="group-hover:text-blue-600">Tutorial</span>
+                <span class="text-xs bg-gray-100 group-hover:bg-blue-100 text-gray-600 group-hover:text-blue-600 px-2 py-1 rounded-full">25</span>
             </a>
         </div>
     </div>
@@ -551,8 +554,8 @@ Update `resources/views/components/layout/sidebar.blade.php` dengan placeholders
             <!-- These will be dynamic from database -->
             @for($i = 1; $i <= 4; $i++)
             <article class="group">
-                <h4 class="font-medium text-gray-900 group-hover:text-primary-600 transition-colors mb-1 text-sm leading-tight">
-                    <a href="/blog/post/{{ $i }}">
+                <h4 class="font-medium text-gray-900 group-hover:text-blue-600 transition-colors mb-1 text-sm leading-tight">
+                    <a href="{{ route('blog.show', $i) }}">
                         Recent Post {{ $i }}: Laravel Tips and Tricks
                     </a>
                 </h4>
@@ -571,29 +574,29 @@ Update `resources/views/components/layout/sidebar.blade.php` dengan placeholders
         <h3 class="font-bold text-gray-900 mb-4">Popular Tags</h3>
         <div class="flex flex-wrap gap-2">
             <!-- These will be dynamic from database -->
-            <a href="#" class="bg-gray-100 hover:bg-primary-100 text-gray-700 hover:text-primary-700 px-3 py-1 rounded-full text-sm transition-colors">
+            <a href="#" class="bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 px-3 py-1 rounded-full text-sm transition-colors">
                 laravel
             </a>
-            <a href="#" class="bg-gray-100 hover:bg-primary-100 text-gray-700 hover:text-primary-700 px-3 py-1 rounded-full text-sm transition-colors">
+            <a href="#" class="bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 px-3 py-1 rounded-full text-sm transition-colors">
                 php
             </a>
-            <a href="#" class="bg-gray-100 hover:bg-primary-100 text-gray-700 hover:text-primary-700 px-3 py-1 rounded-full text-sm transition-colors">
+            <a href="#" class="bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 px-3 py-1 rounded-full text-sm transition-colors">
                 tutorial
             </a>
-            <a href="#" class="bg-gray-100 hover:bg-primary-100 text-gray-700 hover:text-primary-700 px-3 py-1 rounded-full text-sm transition-colors">
+            <a href="#" class="bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 px-3 py-1 rounded-full text-sm transition-colors">
                 beginner
             </a>
-            <a href="#" class="bg-gray-100 hover:bg-primary-100 text-gray-700 hover:text-primary-700 px-3 py-1 rounded-full text-sm transition-colors">
+            <a href="#" class="bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 px-3 py-1 rounded-full text-sm transition-colors">
                 tips
             </a>
-            <a href="#" class="bg-gray-100 hover:bg-primary-100 text-gray-700 hover:text-primary-700 px-3 py-1 rounded-full text-sm transition-colors">
+            <a href="#" class="bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 px-3 py-1 rounded-full text-sm transition-colors">
                 mvc
             </a>
         </div>
     </div>
     
     <!-- Newsletter Signup -->
-    <div class="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-6">
+    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
         <h3 class="font-bold text-gray-900 mb-2">Subscribe Newsletter</h3>
         <p class="text-gray-600 text-sm mb-4">
             Get the latest Laravel tutorials and tips delivered to your inbox.
@@ -601,8 +604,8 @@ Update `resources/views/components/layout/sidebar.blade.php` dengan placeholders
         <form class="space-y-3">
             <input type="email" 
                    placeholder="Your email..." 
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
-            <button type="submit" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">
                 Subscribe
             </button>
         </form>

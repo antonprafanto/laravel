@@ -44,11 +44,31 @@ Route Model Binding adalah fitur Laravel yang secara otomatis mengkonversi param
 
 ### Step 1: Setup Custom Route Model Binding
 
-**Option 1: Copy dari Repository**
-File `app/Providers/RouteServiceProvider.php` sudah tersedia di repository dengan custom bindings lengkap. Anda bisa langsung menggunakan file tersebut.
+**📋 Catatan Laravel 12:**
+Laravel 12 menggunakan struktur bootstrap baru di `bootstrap/app.php`. File `RouteServiceProvider.php` tidak ada secara default, jadi kita perlu membuat atau menggunakan approach yang berbeda.
 
-**Option 2: Edit Manual**
-Atau edit file `app/Providers/RouteServiceProvider.php` dengan menambahkan custom bindings setelah RateLimiter configuration:
+**Option 1: Menggunakan Model Route Key (Recommended untuk Laravel 12)**
+Cara termudah adalah menggunakan route key binding di model dan routes dengan sintaks `{model:field}`:
+
+```php
+// routes/web.php - Laravel 12 approach
+Route::get('/blog/post/{post:slug}', [BlogController::class, 'show'])->name('blog.show');
+Route::get('/blog/category/{category:slug}', [BlogController::class, 'category'])->name('blog.category');
+Route::get('/blog/tag/{tag:slug}', [BlogController::class, 'tag'])->name('blog.tag');
+```
+
+Pastikan model sudah ada method `getRouteKeyName()`:
+
+```php
+// app/Models/Post.php
+public function getRouteKeyName()
+{
+    return 'slug';
+}
+```
+
+**Option 2: Custom Route Model Binding (Advanced)**
+Jika Anda membutuhkan logic binding yang lebih kompleks, buat file `app/Providers/RouteServiceProvider.php` dengan menambahkan custom bindings:
 
 ```php
 <?php
@@ -142,6 +162,35 @@ class RouteServiceProvider extends ServiceProvider
 ```
 
 **Catatan**: Komentar `// ... existing bindings ...` menandakan bahwa mungkin ada binding lain yang sudah ada. Anda tinggal menambahkan 3 binding baru (post, category, tag) setelah RateLimiter configuration.
+
+**Laravel 12 Registration:**
+Setelah membuat RouteServiceProvider, Anda perlu registrasi di `bootstrap/app.php`:
+
+```php
+// bootstrap/app.php
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware): void {
+        //
+    })
+    ->withExceptions(function (Exceptions $exceptions): void {
+        //
+    })
+    ->withProviders([
+        App\Providers\RouteServiceProvider::class, // <- Tambahkan ini
+    ])
+    ->create();
+```
 
 ### Step 2: Perbandingan Sebelum vs Sesudah
 

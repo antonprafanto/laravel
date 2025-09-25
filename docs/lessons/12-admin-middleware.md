@@ -142,7 +142,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
 ## 🗂️ Organize Routes dengan Route Groups
 
-### Step 4: Restructure Web Routes
+**⚠️ PENTING - Simplified Approach untuk Learning**
+
+Dalam lesson ini, kita akan fokus pada konsep middleware dan route groups dengan implementasi yang simple dan tidak terlalu banyak dependencies. Ini memudahkan pembelajaran tanpa overwhelming students dengan terlalu banyak controllers yang belum ada.
+
+### Step 4: Restructure Web Routes (Simplified)
 
 Edit `routes/web.php`:
 
@@ -152,8 +156,6 @@ Edit `routes/web.php`:
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\PostController;
-use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CategoryController as PublicCategoryController;
 use App\Http\Controllers\TagController;
@@ -169,7 +171,7 @@ Route::get('/', function () {
     return redirect()->route('blog.index');
 });
 
-// Blog routes (public)
+// Blog routes (public) - grouped with prefix and name
 Route::prefix('blog')->name('blog.')->group(function () {
     Route::get('/', [BlogController::class, 'index'])->name('index');
     Route::get('/search', [BlogController::class, 'search'])->name('search');
@@ -220,482 +222,305 @@ Route::middleware('auth')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Admin Routes (Authors & Admins)
+| Admin Routes (Simplified - Authors & Admins)
 |--------------------------------------------------------------------------
 */
 
+// Routes untuk Authors (dapat mengelola posts dan categories)
 Route::middleware(['auth', 'author'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
-    // Categories (full CRUD for admins, limited for authors)
+
+    // Categories CRUD (menggunakan controller yang sudah ada dari Lesson 11)
     Route::resource('categories', CategoryController::class);
     Route::patch('/categories/{category}/toggle', [CategoryController::class, 'toggle'])
          ->name('categories.toggle');
-    
-    // Posts management
-    Route::resource('posts', PostController::class);
-    Route::patch('/posts/{post}/toggle-featured', [PostController::class, 'toggleFeatured'])
-         ->name('posts.toggle-featured');
-    Route::post('/posts/{post}/duplicate', [PostController::class, 'duplicate'])
-         ->name('posts.duplicate');
-    
-    // Tags management
-    Route::get('/tags', [TagController::class, 'adminIndex'])->name('tags.index');
-    Route::post('/tags', [TagController::class, 'store'])->name('tags.store');
-    Route::delete('/tags/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
-    
-    // Media uploads
-    Route::post('/upload/image', [MediaController::class, 'uploadImage'])->name('upload.image');
-    Route::delete('/media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Super Admin Routes (Admins Only)
+| Super Admin Routes (Admins Only - Simplified)
 |--------------------------------------------------------------------------
 */
 
+// Routes khusus untuk Super Admin
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    // User management
-    Route::resource('users', UserController::class)->except(['show']);
-    Route::patch('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])
-         ->name('users.toggle-status');
-    Route::patch('/users/{user}/change-role', [UserController::class, 'changeRole'])
-         ->name('users.change-role');
-    
-    // System settings
-    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
-    Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update');
-    
-    // Analytics & reports
-    Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
-    Route::get('/reports/posts', [ReportsController::class, 'posts'])->name('reports.posts');
-    Route::get('/reports/users', [ReportsController::class, 'users'])->name('reports.users');
-});
+    // Contoh route untuk admin-only features
+    Route::get('/users', function() {
+        return view('admin.users-simple', [
+            'users' => \App\Models\User::paginate(20)
+        ]);
+    })->name('users.index');
 
-/*
-|--------------------------------------------------------------------------
-| API Routes (Optional)
-|--------------------------------------------------------------------------
-*/
-
-Route::prefix('api')->middleware(['auth:sanctum'])->group(function () {
-    Route::get('/posts', [BlogController::class, 'apiIndex']);
-    Route::get('/categories', [PublicCategoryController::class, 'apiIndex']);
-    Route::get('/tags', [TagController::class, 'apiIndex']);
+    Route::get('/system-info', function() {
+        return view('admin.system-info');
+    })->name('system.info');
 });
 ```
 
-## 👤 Enhanced User Management
+**💡 Penjelasan Simplifikasi:**
 
-### Step 5: Create UserController
+1. **Fokus pada Learning**: Kita hanya menggunakan controllers yang sudah ada (CategoryController dari Lesson 11)
+2. **Step-by-Step Approach**: Tidak introduce terlalu banyak controllers baru sekaligus
+3. **Practical Examples**: Route closures untuk demo admin-only features tanpa perlu buat controller baru
+4. **Real Implementation**: Students bisa langsung test dan melihat perbedaan author vs admin access
 
-```bash
-php artisan make:controller Admin/UserController --resource
-```
+## 🎯 Create Required Missing Methods
 
-Edit `app/Http/Controllers/Admin/UserController.php`:
+**⚠️ CRITICAL - Fix User Model Methods Terlebih Dahulu**
+
+Sebelum middleware bisa berfungsi, kita perlu menambahkan methods yang missing di User model.
+
+### Step 5: Update User Model Methods
+
+Edit `app/Models/User.php`, tambahkan methods yang diperlukan oleh middleware:
 
 ```php
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Models;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Hash;
+// ... existing use statements ...
 
-class UserController extends Controller
+class User extends Authenticatable
 {
+    // ... existing code ...
+
     /**
-     * Display a listing of users
+     * Check if user can manage posts (admin or author)
      */
-    public function index(Request $request)
+    public function canManagePosts(): bool
     {
-        $search = $request->get('search');
-        $role = $request->get('role');
-        
-        $users = User::query()
-            ->when($search, function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
-            })
-            ->when($role, function ($query, $role) {
-                $query->where('role', $role);
-            })
-            ->withCount(['posts', 'publishedPosts'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20)
-            ->withQueryString();
-
-        $roles = ['admin', 'author', 'user'];
-
-        return view('admin.users.index', compact('users', 'search', 'role', 'roles'));
+        return $this->isAuthor();
     }
 
     /**
-     * Show the form for creating a new user
+     * Update last active timestamp
      */
-    public function create()
+    public function updateLastActive()
     {
-        $roles = ['admin', 'author', 'user'];
-        return view('admin.users.create', compact('roles'));
+        $this->update(['last_active_at' => now()]);
+        return $this;
     }
 
-    /**
-     * Store a newly created user
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role' => ['required', 'in:admin,author,user'],
-            'bio' => ['nullable', 'string', 'max:1000'],
-        ]);
-
-        $validated['password'] = Hash::make($validated['password']);
-        $validated['email_verified_at'] = now();
-
-        $user = User::create($validated);
-
-        return redirect()
-            ->route('admin.users.index')
-            ->with('success', "User '{$user->name}' created successfully!");
-    }
-
-    /**
-     * Show the form for editing user
-     */
-    public function edit(User $user)
-    {
-        $roles = ['admin', 'author', 'user'];
-        return view('admin.users.edit', compact('user', 'roles'));
-    }
-
-    /**
-     * Update the specified user
-     */
-    public function update(Request $request, User $user)
-    {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user)],
-            'role' => ['required', 'in:admin,author,user'],
-            'bio' => ['nullable', 'string', 'max:1000'],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-        ]);
-
-        if (!empty($validated['password'])) {
-            $validated['password'] = Hash::make($validated['password']);
-        } else {
-            unset($validated['password']);
-        }
-
-        $user->update($validated);
-
-        return redirect()
-            ->route('admin.users.index')
-            ->with('success', "User '{$user->name}' updated successfully!");
-    }
-
-    /**
-     * Remove the specified user
-     */
-    public function destroy(User $user)
-    {
-        // Prevent deleting current user
-        if ($user->id === auth()->id()) {
-            return redirect()
-                ->back()
-                ->with('error', 'Cannot delete your own account!');
-        }
-
-        // Check if user has posts
-        if ($user->posts()->exists()) {
-            return redirect()
-                ->back()
-                ->with('error', "Cannot delete user '{$user->name}' because they have posts. Please reassign or delete the posts first.");
-        }
-
-        $userName = $user->name;
-        $user->delete();
-
-        return redirect()
-            ->route('admin.users.index')
-            ->with('success', "User '{$userName}' deleted successfully!");
-    }
-
-    /**
-     * Change user role
-     */
-    public function changeRole(Request $request, User $user)
-    {
-        $validated = $request->validate([
-            'role' => ['required', 'in:admin,author,user']
-        ]);
-
-        // Prevent changing own role
-        if ($user->id === auth()->id()) {
-            return redirect()
-                ->back()
-                ->with('error', 'Cannot change your own role!');
-        }
-
-        $oldRole = $user->role;
-        $user->update($validated);
-
-        return redirect()
-            ->back()
-            ->with('success', "User role changed from '{$oldRole}' to '{$user->role}'!");
-    }
+    // ... existing methods isAdmin(), isAuthor(), etc ...
 }
 ```
 
-## 🎨 Create Admin Navigation Component
+**Jika methods `isAdmin()` dan `isAuthor()` belum ada, tambahkan juga:**
 
-### Step 6: Enhanced Admin Layout
+```php
+/**
+ * Check if user is admin
+ */
+public function isAdmin(): bool
+{
+    return $this->role === 'admin';
+}
 
-Buat `resources/views/layouts/admin.blade.php`:
+/**
+ * Check if user is author (admin or author role)
+ */
+public function isAuthor(): bool
+{
+    return in_array($this->role, ['admin', 'author']);
+}
+```
+
+### Step 6: Create Simple Admin Views
+
+**Buat simple views untuk demo admin-only routes:**
+
+Buat `resources/views/admin/users-simple.blade.php`:
 
 ```html
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin Dashboard') - {{ config('app.name') }}</title>
-    
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @stack('head')
-</head>
-<body class="h-full bg-gray-50" x-data="{ sidebarOpen: false }">
-    <div class="flex h-full">
-        <!-- Sidebar -->
-        <div class="hidden lg:flex lg:flex-shrink-0">
-            <div class="flex flex-col w-64">
-                <div class="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto bg-white border-r border-gray-200">
-                    <!-- Logo -->
-                    <div class="flex items-center flex-shrink-0 px-4">
-                        <a href="{{ route('admin.dashboard') }}" class="flex items-center space-x-2">
-                            <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
-                            </svg>
-                            <span class="text-xl font-bold text-gray-900">Admin</span>
-                        </a>
-                    </div>
-                    
-                    <!-- Navigation -->
-                    <nav class="mt-8 flex-1 px-2 space-y-1">
-                        <!-- Dashboard -->
-                        <a href="{{ route('admin.dashboard') }}" 
-                           class="admin-nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h2a2 2 0 012 2v2H8V5z"/>
-                            </svg>
-                            Dashboard
-                        </a>
+@extends('layouts.app')
 
-                        <!-- Posts -->
-                        <div class="space-y-1">
-                            <div class="admin-nav-section">Content</div>
-                            <a href="{{ route('admin.posts.index') }}" 
-                               class="admin-nav-link {{ request()->routeIs('admin.posts.*') ? 'active' : '' }}">
-                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                Posts
-                            </a>
+@section('title', 'Users List - Admin Only')
 
-                            <a href="{{ route('admin.categories.index') }}" 
-                               class="admin-nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
-                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                                </svg>
-                                Categories
-                            </a>
-
-                            <a href="{{ route('admin.tags.index') }}" 
-                               class="admin-nav-link {{ request()->routeIs('admin.tags.*') ? 'active' : '' }}">
-                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>
-                                </svg>
-                                Tags
-                            </a>
-                        </div>
-
-                        @can('admin-access')
-                        <!-- Admin Only -->
-                        <div class="space-y-1">
-                            <div class="admin-nav-section">Administration</div>
-                            <a href="{{ route('admin.users.index') }}" 
-                               class="admin-nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                                </svg>
-                                Users
-                            </a>
-
-                            <a href="{{ route('admin.settings.index') }}" 
-                               class="admin-nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
-                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                                Settings
-                            </a>
-                        </div>
-                        @endcan
-
-                        <!-- Quick Links -->
-                        <div class="space-y-1 pt-4 border-t">
-                            <div class="admin-nav-section">Quick Links</div>
-                            <a href="{{ route('blog.index') }}" 
-                               class="admin-nav-link" target="_blank">
-                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                </svg>
-                                View Blog
-                            </a>
-                        </div>
-                    </nav>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main content -->
-        <div class="flex flex-col flex-1 overflow-hidden">
-            <!-- Top navigation -->
-            <div class="relative z-10 flex-shrink-0 flex h-16 bg-white shadow">
-                <!-- Mobile menu button -->
-                <button @click="sidebarOpen = true" 
-                        class="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 lg:hidden">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
-                    </svg>
-                </button>
-
-                <!-- Top bar -->
-                <div class="flex-1 px-4 flex justify-between">
-                    <div class="flex-1 flex">
-                        <div class="w-full flex md:ml-0">
-                            <!-- Breadcrumb or page title could go here -->
-                            <div class="flex items-center">
-                                <h1 class="text-lg font-medium text-gray-900">
-                                    @yield('page-title', 'Admin Dashboard')
-                                </h1>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- User menu -->
-                    <div class="ml-4 flex items-center md:ml-6">
-                        <div class="ml-3 relative" x-data="{ open: false }">
-                            <div>
-                                <button @click="open = !open" 
-                                        class="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                                    <img class="h-8 w-8 rounded-full" 
-                                         src="{{ auth()->user()->avatar_url }}" 
-                                         alt="{{ auth()->user()->name }}">
-                                    <span class="ml-3 text-gray-700 text-sm font-medium hidden md:block">{{ auth()->user()->name }}</span>
-                                </button>
-                            </div>
-
-                            <div x-show="open" 
-                                 x-transition
-                                 @click.away="open = false"
-                                 class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                                <a href="{{ route('profile.edit') }}" 
-                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    Your Profile
-                                </a>
-                                <form method="POST" action="{{ route('logout') }}">
-                                    @csrf
-                                    <button type="submit" 
-                                            class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        Sign out
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Page content -->
-            <main class="flex-1 relative overflow-y-auto focus:outline-none">
-                <div class="py-6">
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        @yield('content')
-                    </div>
-                </div>
-            </main>
-        </div>
+@section('content')
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Users List</h1>
+        <p class="text-gray-600">This page is only accessible by Admins (not Authors)</p>
     </div>
 
-    <!-- Mobile sidebar -->
-    <div x-show="sidebarOpen" 
-         x-transition:enter="transition-opacity ease-linear duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition-opacity ease-linear duration-300"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         class="fixed inset-0 flex z-40 lg:hidden">
-        <div class="fixed inset-0 bg-gray-600 bg-opacity-75" @click="sidebarOpen = false"></div>
-        <!-- Mobile sidebar content would go here -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                @foreach($users as $user)
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {{ $user->name }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ $user->email }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                               {{ $user->role === 'admin' ? 'bg-red-100 text-red-800' :
+                                  ($user->role === 'author' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800') }}">
+                            {{ ucfirst($user->role) }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ $user->created_at->format('M d, Y') }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        <div class="px-6 py-4">
+            {{ $users->links() }}
+        </div>
+    </div>
+</div>
+@endsection
+```
+
+Buat `resources/views/admin/system-info.blade.php`:
+
+```html
+@extends('layouts.app')
+
+@section('title', 'System Info - Admin Only')
+
+@section('content')
+<div class="max-w-4xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">System Information</h1>
+        <p class="text-gray-600">Sensitive system information - Admin access only</p>
     </div>
 
-    @include('components.flash-messages')
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-semibold mb-4">Laravel Info</h3>
+            <dl class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-gray-600">Laravel Version:</dt>
+                    <dd class="font-medium">{{ app()->version() }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-600">PHP Version:</dt>
+                    <dd class="font-medium">{{ PHP_VERSION }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-600">Environment:</dt>
+                    <dd class="font-medium">{{ app()->environment() }}</dd>
+                </div>
+            </dl>
+        </div>
 
-    <!-- Catatan: CSS @apply untuk admin sudah dipindahkan ke resources/css/app.css -->
-
-    @stack('scripts')
-</body>
-</html>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-semibold mb-4">Statistics</h3>
+            <dl class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-gray-600">Total Users:</dt>
+                    <dd class="font-medium">{{ \App\Models\User::count() }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-600">Total Posts:</dt>
+                    <dd class="font-medium">{{ \App\Models\Post::count() }}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-600">Total Categories:</dt>
+                    <dd class="font-medium">{{ \App\Models\Category::count() }}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+</div>
+@endsection
 ```
 
-### Tambahkan CSS Admin ke app.css
+## 🧪 Testing Middleware & Route Groups
 
-**PENTING: Untuk Tailwind CSS v4**, tambahkan CSS berikut ke `resources/css/app.css`:
+### Step 7: Test Middleware Implementation
 
-```css
-/* CSS untuk Admin Navigation - Tambahkan di app.css */
-.admin-nav-link {
-    @apply group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900;
-}
+**Pre-Testing Verification:**
 
-.admin-nav-link.active {
-    @apply bg-primary-100 text-primary-700;
-}
+```bash
+# 1. Verify middleware registration
+php artisan route:list --middleware=author
+# Expected: Should show admin.dashboard and admin.categories routes
 
-.admin-nav-section {
-    @apply px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider;
-}
+# 2. Test User model methods
+php artisan tinker
+>>> $user = App\Models\User::first();
+>>> $user->canManagePosts();
+>>> $user->isAdmin();
+>>> $user->isAuthor();
+>>> exit
+
+# 3. Verify middleware files exist
+ls -la app/Http/Middleware/AdminMiddleware.php
+ls -la app/Http/Middleware/AuthorMiddleware.php
 ```
 
-**Catatan**: CSS `@apply` tidak boleh ditulis di dalam `<style>` tag dalam file Blade. Selalu gunakan file CSS terpisah untuk Tailwind v4.
+**Testing URLs:**
 
-## 🎯 Kesimpulan Pelajaran 12
+1. **Login as different user roles** and test access:
+   - `http://localhost:8000/admin/dashboard` (Author & Admin can access)
+   - `http://localhost:8000/admin/categories` (Author & Admin can access)
+   - `http://localhost:8000/admin/users` (Only Admin can access)
+   - `http://localhost:8000/admin/system-info` (Only Admin can access)
 
-Selamat! Anda telah berhasil:
-- ✅ Membuat custom middleware untuk admin dan author
-- ✅ Mengorganisir routes dengan route groups yang terstruktur
+2. **Expected Behaviors:**
+   - ✅ **Author user**: Can access dashboard & categories, gets 403 on admin-only routes
+   - ✅ **Admin user**: Can access all routes
+   - ✅ **Regular user**: Gets 403 on all admin routes
+   - ✅ **Guest**: Redirected to login
+
+**Troubleshooting Common Errors:**
+
+- **Error**: "Middleware [author] not found"
+  - **Solution**: Ensure middleware registered correctly in `bootstrap/app.php`
+
+- **Error**: "Call to undefined method canManagePosts()"
+  - **Solution**: Add missing methods to User model (Step 5)
+
+- **Error**: "403 Access Denied" for all users
+  - **Solution**: Check user roles in database, ensure test users have correct roles
+
+## 🎯 Kesimpulan
+
+Selamat! Anda telah berhasil mempelajari:
+
+### ✅ **Middleware Concepts:**
+- ✅ Cara membuat custom middleware (AdminMiddleware & AuthorMiddleware)
+- ✅ Registrasi middleware di `bootstrap/app.php` (Laravel 11+)
 - ✅ Implementasi role-based access control
-- ✅ Membuat admin layout yang sophisticated
-- ✅ Menambahkan user management untuk admin
 
-Sistem admin sekarang sudah robust dengan proper authorization dan navigation yang user-friendly.
+### ✅ **Route Groups & Organization:**
+- ✅ Penggunaan `Route::prefix()` dan `Route::name()` untuk grouping
+- ✅ Multiple middleware pada route groups
+- ✅ Separation of concerns dengan route organization yang clean
+
+### ✅ **Practical Implementation:**
+- ✅ User model methods untuk authorization logic
+- ✅ Simple admin views untuk testing purposes
+- ✅ Real-world testing scenario dengan different user roles
+
+### 💡 **Best Practices Learned:**
+1. **Keep middleware simple** - Focus on single responsibility
+2. **Use proper naming conventions** for middleware aliases
+3. **Group routes logically** by functionality dan permission level
+4. **Add comprehensive error handling** untuk better UX
+5. **Test with different user roles** untuk ensure proper access control
+
+**Lesson ini telah di-simplified untuk fokus pada core concepts tanpa overwhelming students dengan terlalu banyak dependencies.**
 
 ---
 
-**Selanjutnya:** [Pelajaran 13: Posts CRUD with Performance and Debugbar](13-posts-crud-performance.md)
+**Selanjutnya:** [Pelajaran 13: Posts CRUD and Performance](13-posts-crud-performance.md)
 
-*Admin system enhanced! 🔐*
+*Middleware & Route Groups mastered! 🛡️*

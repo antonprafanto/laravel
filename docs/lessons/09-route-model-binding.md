@@ -701,6 +701,514 @@ Edit `resources/views/blog/category.blade.php`:
 @endsection
 ```
 
+### Update Tag View
+
+Edit `resources/views/blog/tag.blade.php`:
+
+```html
+@extends('layouts.app')
+
+@section('title', 'Tag: ' . $tag->name . ' - Blog Laravel')
+
+@section('content')
+<div class="max-w-6xl mx-auto">
+    <!-- Tag Header -->
+    <div class="bg-white rounded-xl shadow-sm p-8 mb-8">
+        <div class="text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
+                <span class="text-purple-600 text-2xl font-bold">#</span>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-4"># {{ $tag->name }}</h1>
+            <div class="text-sm text-gray-500">
+                {{ $posts->total() }} {{ Str::plural('artikel', $posts->total()) }} dengan tag ini
+            </div>
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Posts Grid -->
+        <div class="lg:col-span-2">
+            @if($posts->count() > 0)
+            <div class="grid gap-6">
+                @foreach($posts as $post)
+                <article class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="md:flex">
+                        <div class="md:w-48 bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                            <div class="text-white text-center p-6">
+                                <div class="text-3xl mb-2">#️⃣</div>
+                                <div class="text-sm font-medium">{{ $post->category->name }}</div>
+                            </div>
+                        </div>
+                        <div class="flex-1 p-6">
+                            <div class="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+                                <span class="bg-{{ $post->category->color ?? 'gray' }}-100 text-{{ $post->category->color ?? 'gray' }}-700 px-3 py-1 rounded-full font-medium">
+                                    {{ $post->category->name }}
+                                </span>
+                                <span>{{ $post->published_at->format('M d, Y') }}</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-3 hover:text-primary-600 transition-colors">
+                                <a href="{{ route('blog.show', $post) }}">{{ $post->title }}</a>
+                            </h3>
+                            <p class="text-gray-600 mb-4">{{ $post->excerpt }}</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">By {{ $post->user->name }}</span>
+                                <a href="{{ route('blog.show', $post) }}" class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+                                    Read More →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+                @endforeach
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-8">
+                {{ $posts->links() }}
+            </div>
+            @else
+            <div class="text-center py-12">
+                <div class="text-6xl mb-4">#️⃣</div>
+                <h2 class="text-xl font-bold text-gray-900 mb-2">Tidak ada artikel</h2>
+                <p class="text-gray-600">Belum ada artikel dengan tag "{{ $tag->name }}".</p>
+            </div>
+            @endif
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Tag Stats -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h3 class="font-bold text-gray-900 mb-4">Tag Statistics</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Total Posts:</span>
+                        <span class="font-medium">{{ $posts->total() }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Categories:</span>
+                        <span class="font-medium">{{ $tagCategories->count() }}</span>
+                    </div>
+                </div>
+            </div>
+
+            @if(isset($relatedTags) && $relatedTags->count() > 0)
+            <!-- Related Tags -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h3 class="font-bold text-gray-900 mb-4">Related Tags</h3>
+                <div class="flex flex-wrap gap-2">
+                    @foreach($relatedTags as $relatedTag)
+                    <a href="{{ route('blog.tag', $relatedTag) }}"
+                       class="inline-flex items-center bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-primary-100 hover:text-primary-700 transition-colors text-sm">
+                        #{{ $relatedTag->name }}
+                        <span class="ml-1 text-xs">({{ $relatedTag->published_posts_count }})</span>
+                    </a>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+        </div>
+    </div>
+</div>
+@endsection
+```
+
+### Update Search View
+
+Edit `resources/views/blog/search.blade.php`:
+
+```html
+@extends('layouts.app')
+
+@section('title', 'Search: ' . $search . ' - Blog Laravel')
+
+@section('content')
+<div class="max-w-6xl mx-auto">
+    <!-- Search Header -->
+    <div class="bg-white rounded-xl shadow-sm p-8 mb-8">
+        <div class="text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1 0 5.25 5.25a7.5 7.5 0 0 0 11.4 11.4z"/>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">Search Results</h1>
+            <p class="text-lg text-gray-600">
+                Showing results for: <strong>"{{ $search }}"</strong>
+            </p>
+            <div class="text-sm text-gray-500 mt-2">
+                {{ $totalResults }} {{ Str::plural('result', $totalResults) }} found
+            </div>
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Search Results -->
+        <div class="lg:col-span-2">
+            @if($posts->count() > 0)
+            <div class="space-y-6">
+                @foreach($posts as $post)
+                <article class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="md:flex">
+                        <div class="md:w-48 bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                            <div class="text-white text-center p-6">
+                                <div class="text-3xl mb-2">🔍</div>
+                                <div class="text-sm font-medium">{{ $post->category->name }}</div>
+                            </div>
+                        </div>
+                        <div class="flex-1 p-6">
+                            <div class="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+                                <span class="bg-{{ $post->category->color ?? 'gray' }}-100 text-{{ $post->category->color ?? 'gray' }}-700 px-3 py-1 rounded-full font-medium">
+                                    {{ $post->category->name }}
+                                </span>
+                                <span>{{ $post->published_at->format('M d, Y') }}</span>
+                                <span>•</span>
+                                <span>{{ $post->reading_time }}</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-3 hover:text-primary-600 transition-colors">
+                                <a href="{{ route('blog.show', $post) }}">{{ $post->title }}</a>
+                            </h3>
+                            <p class="text-gray-600 mb-4">{{ $post->excerpt }}</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">By {{ $post->user->name }} • {{ $post->views_count }} views</span>
+                                <a href="{{ route('blog.show', $post) }}" class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+                                    Read More →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+                @endforeach
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-8">
+                {{ $posts->appends(request()->except('page'))->links() }}
+            </div>
+            @else
+            <div class="text-center py-12">
+                <div class="text-6xl mb-4">🔍</div>
+                <h2 class="text-xl font-bold text-gray-900 mb-2">No Results Found</h2>
+                <p class="text-gray-600 mb-6">No articles match your search for "{{ $search }}".</p>
+
+                <!-- Search Tips -->
+                <div class="bg-gray-50 rounded-lg p-6 text-left max-w-md mx-auto">
+                    <h4 class="font-semibold text-gray-900 mb-3">Search Tips:</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li>• Try shorter keywords</li>
+                        <li>• Check your spelling</li>
+                        <li>• Use synonyms or related terms</li>
+                        <li>• Browse categories or tags</li>
+                    </ul>
+                </div>
+            </div>
+            @endif
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-1 space-y-6">
+            @if($suggestedCategories->count() > 0)
+            <!-- Suggested Categories -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h3 class="font-bold text-gray-900 mb-4">Suggested Categories</h3>
+                <div class="space-y-2">
+                    @foreach($suggestedCategories as $category)
+                    <a href="{{ route('blog.category', $category) }}"
+                       class="block text-gray-600 hover:text-primary-600 transition-colors">
+                        {{ $category->name }}
+                        <span class="text-xs text-gray-500">({{ $category->published_posts_count }} posts)</span>
+                    </a>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
+            @if($suggestedTags->count() > 0)
+            <!-- Suggested Tags -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h3 class="font-bold text-gray-900 mb-4">Related Tags</h3>
+                <div class="flex flex-wrap gap-2">
+                    @foreach($suggestedTags as $tag)
+                    <a href="{{ route('blog.tag', $tag) }}"
+                       class="inline-flex items-center bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-primary-100 hover:text-primary-700 transition-colors text-sm">
+                        #{{ $tag->name }}
+                        <span class="ml-1 text-xs">({{ $tag->published_posts_count }})</span>
+                    </a>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+        </div>
+    </div>
+</div>
+@endsection
+```
+
+### Update Author View
+
+Edit `resources/views/blog/author.blade.php`:
+
+```html
+@extends('layouts.app')
+
+@section('title', 'Author: ' . $user->name . ' - Blog Laravel')
+
+@section('content')
+<div class="max-w-6xl mx-auto">
+    <!-- Author Header -->
+    <div class="bg-white rounded-xl shadow-sm p-8 mb-8">
+        <div class="text-center">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full mb-4 text-white text-2xl font-bold">
+                {{ strtoupper(substr($user->name, 0, 2)) }}
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">{{ $user->name }}</h1>
+            @if($user->bio)
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto mb-6">{{ $user->bio }}</p>
+            @endif
+
+            <!-- Author Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl mx-auto">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-indigo-600">{{ $authorStats['total_posts'] }}</div>
+                    <div class="text-sm text-gray-500">Articles</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-indigo-600">{{ number_format($authorStats['total_views']) }}</div>
+                    <div class="text-sm text-gray-500">Total Views</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-indigo-600">{{ $authorStats['categories_count'] }}</div>
+                    <div class="text-sm text-gray-500">Categories</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-indigo-600">
+                        {{ $authorStats['first_post_date'] ? \Carbon\Carbon::parse($authorStats['first_post_date'])->format('M Y') : '-' }}
+                    </div>
+                    <div class="text-sm text-gray-500">Writing Since</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Posts Grid -->
+        <div class="lg:col-span-2">
+            @if($posts->count() > 0)
+            <div class="grid gap-6">
+                @foreach($posts as $post)
+                <article class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="md:flex">
+                        <div class="md:w-48 bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
+                            <div class="text-white text-center p-6">
+                                <div class="text-3xl mb-2">✍️</div>
+                                <div class="text-sm font-medium">{{ $post->category->name }}</div>
+                            </div>
+                        </div>
+                        <div class="flex-1 p-6">
+                            <div class="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+                                <span class="bg-{{ $post->category->color ?? 'gray' }}-100 text-{{ $post->category->color ?? 'gray' }}-700 px-3 py-1 rounded-full font-medium">
+                                    {{ $post->category->name }}
+                                </span>
+                                <span>{{ $post->published_at->format('M d, Y') }}</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-3 hover:text-primary-600 transition-colors">
+                                <a href="{{ route('blog.show', $post) }}">{{ $post->title }}</a>
+                            </h3>
+                            <p class="text-gray-600 mb-4">{{ $post->excerpt }}</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">{{ $post->reading_time }} • {{ $post->views_count }} views</span>
+                                <a href="{{ route('blog.show', $post) }}" class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+                                    Read More →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+                @endforeach
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-8">
+                {{ $posts->links() }}
+            </div>
+            @else
+            <div class="text-center py-12">
+                <div class="text-6xl mb-4">✍️</div>
+                <h2 class="text-xl font-bold text-gray-900 mb-2">No Articles Yet</h2>
+                <p class="text-gray-600">{{ $user->name }} hasn't published any articles with your current filters.</p>
+            </div>
+            @endif
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Author Info -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h3 class="font-bold text-gray-900 mb-4">About {{ $user->name }}</h3>
+                <div class="space-y-3">
+                    @if($user->bio)
+                    <p class="text-gray-600 text-sm">{{ $user->bio }}</p>
+                    @endif
+                    <div class="pt-3 border-t">
+                        <div class="text-xs text-gray-500 uppercase tracking-wide mb-2">Statistics</div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Total Articles:</span>
+                                <span class="font-medium">{{ $authorStats['total_posts'] }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Total Views:</span>
+                                <span class="font-medium">{{ number_format($authorStats['total_views']) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+```
+
+### Update Archive View
+
+Edit `resources/views/blog/archive.blade.php`:
+
+```html
+@extends('layouts.app')
+
+@section('title', 'Archive: ' . $archiveInfo['year'] . ($archiveInfo['month'] ? ' ' . $archiveInfo['month_name'] : '') . ' - Blog Laravel')
+
+@section('content')
+<div class="max-w-6xl mx-auto">
+    <!-- Archive Header -->
+    <div class="bg-white rounded-xl shadow-sm p-8 mb-8">
+        <div class="text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
+                <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                Archive {{ $archiveInfo['year'] }}
+                @if($archiveInfo['month'])
+                    - {{ $archiveInfo['month_name'] }}
+                @endif
+            </h1>
+            <p class="text-lg text-gray-600">
+                Articles published in
+                @if($archiveInfo['month'])
+                    {{ $archiveInfo['month_name'] }} {{ $archiveInfo['year'] }}
+                @else
+                    {{ $archiveInfo['year'] }}
+                @endif
+            </p>
+            <div class="text-sm text-gray-500 mt-2">
+                {{ $archiveInfo['total_posts'] }} {{ Str::plural('article', $archiveInfo['total_posts']) }} found
+            </div>
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Archive Timeline -->
+        <div class="lg:col-span-2">
+            @if($posts->count() > 0)
+            <div class="space-y-6">
+                @foreach($posts as $post)
+                <article class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="md:flex">
+                        <div class="md:w-48 bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
+                            <div class="text-white text-center p-6">
+                                <div class="text-3xl mb-2">📅</div>
+                                <div class="text-sm font-medium">{{ $post->published_at->format('M d') }}</div>
+                            </div>
+                        </div>
+                        <div class="flex-1 p-6">
+                            <div class="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+                                <span class="bg-{{ $post->category->color ?? 'gray' }}-100 text-{{ $post->category->color ?? 'gray' }}-700 px-3 py-1 rounded-full font-medium">
+                                    {{ $post->category->name }}
+                                </span>
+                                <span>{{ $post->published_at->format('F d, Y') }}</span>
+                                <span>•</span>
+                                <span>{{ $post->reading_time }}</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-3 hover:text-primary-600 transition-colors">
+                                <a href="{{ route('blog.show', $post) }}">{{ $post->title }}</a>
+                            </h3>
+                            <p class="text-gray-600 mb-4">{{ $post->excerpt }}</p>
+                            <div class="flex items-center justify-between">
+                                <div class="text-sm text-gray-500">
+                                    By {{ $post->user->name }} • {{ $post->views_count }} views
+                                    @if($post->tags->count() > 0)
+                                    <span class="ml-2">
+                                        @foreach($post->tags->take(2) as $tag)
+                                            <span class="text-primary-600">#{{ $tag->name }}</span>{{ !$loop->last ? ' ' : '' }}
+                                        @endforeach
+                                    </span>
+                                    @endif
+                                </div>
+                                <a href="{{ route('blog.show', $post) }}" class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+                                    Read More →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+                @endforeach
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-8">
+                {{ $posts->links() }}
+            </div>
+            @else
+            <div class="text-center py-12">
+                <div class="text-6xl mb-4">📅</div>
+                <h2 class="text-xl font-bold text-gray-900 mb-2">No Articles Found</h2>
+                <p class="text-gray-600">
+                    No articles were published in
+                    @if($archiveInfo['month'])
+                        {{ $archiveInfo['month_name'] }} {{ $archiveInfo['year'] }}
+                    @else
+                        {{ $archiveInfo['year'] }}
+                    @endif
+                </p>
+            </div>
+            @endif
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-1 space-y-6">
+            @if($relatedArchives->count() > 0)
+            <!-- Related Archives -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h3 class="font-bold text-gray-900 mb-4">Other Archives</h3>
+                <div class="grid gap-3">
+                    @foreach($relatedArchives as $archive)
+                    <a href="{{ route('blog.archive.month', ['year' => $archive->year, 'month' => $archive->month]) }}"
+                       class="block bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors">
+                        <div class="font-medium text-gray-900">{{ $archive->month_name }} {{ $archive->year }}</div>
+                        <div class="text-sm text-gray-500">{{ $archive->posts_count }} {{ Str::plural('article', $archive->posts_count) }}</div>
+                    </a>
+                    @endforeach
+                </div>
+
+                @if($archiveInfo['month'])
+                <div class="mt-4 pt-4 border-t">
+                    <a href="{{ route('blog.archive.year', $archiveInfo['year']) }}"
+                       class="text-primary-600 hover:text-primary-700 font-medium text-sm">
+                        View all {{ $archiveInfo['year'] }} articles →
+                    </a>
+                </div>
+                @endif
+            </div>
+            @endif
+        </div>
+    </div>
+</div>
+@endsection
+```
+
 ## 🛡️ Error Handling untuk Route Model Binding
 
 ### Custom 404 Responses

@@ -10,6 +10,7 @@ Setelah menyelesaikan pelajaran ini, Anda akan:
 - ✅ Membuat migrations untuk semua tabel yang dibutuhkan
 - ✅ Menjalankan dan rollback migrations
 - ✅ Memahami foreign key constraints dan relationships
+- ✅ Memperluas tabel users dengan field tambahan untuk blog system
 - ✅ Membuat Eloquent models yang sesuai dengan tabel database
 - ✅ Memahami urutan yang benar: Migration → Model → Seeder
 
@@ -18,11 +19,12 @@ Setelah menyelesaikan pelajaran ini, Anda akan:
 ### Tabel yang Akan Kita Buat
 
 1. **categories** - Untuk mengorganisir posts
-2. **posts** - Tabel utama untuk artikel blog  
+2. **posts** - Tabel utama untuk artikel blog
 3. **tags** - Tag system untuk posts
 4. **post_tag** - Pivot table untuk many-to-many relationship
+5. **users** (enhancement) - Menambah field avatar, bio, role untuk blog system
 
-> **Note**: Tabel `users` sudah tersedia dari instalasi Laravel default
+> **Note**: Tabel `users` sudah tersedia dari instalasi Laravel default, tapi kita akan menambahkan field tambahan yang dibutuhkan untuk sistem blog.
 
 ## 📋 Migration untuk Categories
 
@@ -236,9 +238,11 @@ return new class extends Migration
 };
 ```
 
-## 👤 Update Migration Users (Optional Enhancement)
+## 👤 Update Migration Users (Required for Lesson 7)
 
-Jika ingin menambahkan field tambahan pada users table:
+**PENTING**: Field ini akan dibutuhkan untuk sistem authentication di Lesson 7 (MVC dan Eloquent Models) dan Lesson 10 (Laravel Breeze). Mari kita buat sekarang untuk menghindari dependency issues.
+
+### Step 5: Menambahkan Field Blog ke Users Table
 
 ```bash
 php artisan make:migration add_additional_fields_to_users_table --table=users
@@ -282,7 +286,7 @@ return new class extends Migration
 
 ## 🚀 Menjalankan Migrations
 
-### Step 5: Jalankan Semua Migrations
+### Step 6: Jalankan Semua Migrations
 
 ```bash
 # Jalankan semua migrations
@@ -299,17 +303,21 @@ Output yang diharapkan:
 ```
 Migrating: 2025_09_09_000001_create_categories_table
 Migrated:  2025_09_09_000001_create_categories_table (45.67ms)
-Migrating: 2025_09_09_000002_create_posts_table  
+Migrating: 2025_09_09_000002_create_posts_table
 Migrated:  2025_09_09_000002_create_posts_table (67.23ms)
 Migrating: 2025_09_09_000003_create_tags_table
 Migrated:  2025_09_09_000003_create_tags_table (23.45ms)
 Migrating: 2025_09_09_000004_create_post_tag_table
 Migrated:  2025_09_09_000004_create_post_tag_table (34.12ms)
+Migrating: 2025_09_09_000005_add_additional_fields_to_users_table
+Migrated:  2025_09_09_000005_add_additional_fields_to_users_table (28.93ms)
 ```
+
+✅ **Migration berhasil!** Sekarang tabel users memiliki field tambahan yang diperlukan untuk sistem blog dan authentication.
 
 ## 🔍 Verifikasi Database Structure
 
-### Step 6: Periksa Tabel yang Dibuat
+### Step 7: Periksa Tabel yang Dibuat
 
 ```bash
 # Menggunakan phpMyAdmin
@@ -359,7 +367,7 @@ Berikut adalah relasi antar tabel:
 
 ## 📝 Membuat Eloquent Models
 
-### Step 6: Membuat Model Category
+### Step 8: Membuat Model Category
 
 **PENTING**: Sebelum membuat seeder, kita harus membuat model terlebih dahulu agar seeder bisa menggunakan model tersebut.
 
@@ -440,10 +448,19 @@ class Category extends Model
     {
         return $query->orderBy('sort_order')->orderBy('name');
     }
+
+    /**
+     * Get only published posts for this category.
+     */
+    public function publishedPosts()
+    {
+        return $this->posts()->where('status', 'published')
+                            ->where('published_at', '<=', now());
+    }
 }
 ```
 
-### Step 7: Membuat Model Tag
+### Step 9: Membuat Model Tag
 
 ```bash
 php artisan make:model Tag
@@ -492,10 +509,27 @@ class Tag extends Model
     {
         return $this->belongsToMany(Post::class);
     }
+
+    /**
+     * Get only published posts for this tag.
+     */
+    public function publishedPosts()
+    {
+        return $this->posts()->where('status', 'published')
+                             ->where('published_at', '<=', now());
+    }
+
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
 }
 ```
 
-### Step 8: Membuat Model Post (Preview)
+### Step 10: Membuat Model Post (Preview)
 
 ```bash
 php artisan make:model Post
@@ -594,12 +628,65 @@ class Post extends Model
     {
         return $query->where('is_featured', true);
     }
+
+    /**
+     * Scope for recent posts with limit.
+     */
+    public function scopeRecent($query, $limit = 5)
+    {
+        return $query->orderBy('published_at', 'desc')
+                    ->limit($limit);
+    }
+
+    /**
+     * Get formatted published date.
+     */
+    public function getPublishedDateAttribute()
+    {
+        return $this->published_at?->format('d F Y');
+    }
+
+    /**
+     * Get estimated reading time.
+     */
+    public function getReadingTimeAttribute()
+    {
+        $wordCount = str_word_count(strip_tags($this->content));
+        $readingSpeed = 200; // words per minute
+        $minutes = ceil($wordCount / $readingSpeed);
+
+        return $minutes . ' min read';
+    }
+
+    /**
+     * Alias for user relationship (for semantic clarity).
+     */
+    public function author()
+    {
+        return $this->user();
+    }
+
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
+    /**
+     * Increment view count.
+     */
+    public function incrementViews()
+    {
+        $this->increment('views_count');
+    }
 }
 ```
 
 ## 💾 Database Seeders (Bonus)
 
-### Step 9: Membuat Sample Data
+### Step 11: Membuat Sample Data
 
 Buat seeder untuk testing:
 
